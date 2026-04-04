@@ -12,6 +12,7 @@ import {
   fetchVotacoes,
   fetchVotacaoVotos,
 } from '@/lib/camara';
+import { supabase } from '@/lib/supabase';
 
 export function useDeputados(filters: {
   nome?: string;
@@ -98,4 +99,38 @@ export function useVotacaoVotos(idVotacao: string) {
     staleTime: 30 * 60 * 1000,
   });
 }
+
+interface Secretario {
+  id: string;
+  ponto: string;
+  nome: string;
+  id_legislatura: number;
+  cargo: string;
+  lotacao: string;
+  situacao: string;
+  sigla_uf: string;
+  updated_at: string;
+}
+
+export function useSecretarios(gabineteNome: string | undefined) {
+  return useQuery<Secretario[]>({
+    queryKey: queryKeys.deputados.secretarios(gabineteNome || ''),
+    queryFn: async () => {
+      if (!gabineteNome) return [];
+      const { data, error } = await supabase
+        .from('secretarios')
+        .select('*')
+        .ilike('lotacao', `%${gabineteNome}%`)
+        .order('nome', { ascending: true });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      return data || [];
+    },
+    enabled: !!gabineteNome,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
 

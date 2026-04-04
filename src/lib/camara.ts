@@ -1,9 +1,10 @@
 // ---------------------------------------------------------------------------
 // Câmara dos Deputados API Client – Pure fetch functions
-// Base URL: https://dadosabertos.camara.leg.br/api/v2
+// Proxy URL via next.config.ts rewrites: /api-camara
 // ---------------------------------------------------------------------------
 
-const BASE_URL = 'https://dadosabertos.camara.leg.br/api/v2';
+const IS_BROWSER = typeof window !== 'undefined';
+const BASE_URL = IS_BROWSER ? '/api-camara' : 'https://dadosabertos.camara.leg.br/api/v2';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -126,7 +127,9 @@ async function camaraFetch<T>(url: string): Promise<T> {
 }
 
 function buildUrl(path: string, params: Record<string, string | number | undefined> = {}): string {
-  const url = new URL(`${BASE_URL}${path}`);
+  // Use window.location.origin if in browser to handle relative BASE_URL
+  const base = IS_BROWSER ? window.location.origin + BASE_URL : BASE_URL;
+  const url = new URL(`${base}${path}`);
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== '' && value !== null) {
       url.searchParams.set(key, String(value));
