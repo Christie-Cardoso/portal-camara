@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { useDeputado, useDeputadoDespesas, useDeputadoOrgaos, useDeputadoFrentes, useVotacoes, useVotacaoVotos } from '@/hooks/use-camara';
+import { useState, useMemo, use } from 'react';
+import { useDeputado, useDeputadoDespesas, useDeputadoOrgaos, useDeputadoFrentes, useVotacoes, useVotacaoVotos, useSecretarios } from '@/hooks/use-camara';
 import { ErrorState } from '@/components/ErrorState';
 import { Pagination } from '@/components/Pagination';
 import { SpinnerFullPage, TableSkeleton } from '@/components/LoadingState';
@@ -169,6 +169,18 @@ export default function DeputadoDetailPage() {
   const frentes = frentesData || [];
   const votacoes = votacoesData?.items || [];
 
+  const searchName = dep?.ultimoStatus.nome;
+  const { 
+    data: secretarios, 
+    isLoading: loadingSecretarios, 
+    isError: errorSecretarios,
+    error: secretarioError
+  } = useSecretarios(searchName);
+
+  if (errorSecretarios) {
+    console.error('Supabase Error:', secretarioError);
+  }
+
   const totalDespesas = despesas.reduce((sum, d) => sum + d.valorLiquido, 0);
 
   // Filter frentes by search
@@ -265,28 +277,28 @@ export default function DeputadoDetailPage() {
       {/* TABS NAVIGATION */}
       {/* ================================================================ */}
       <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide border-b border-white/5">
-        <button 
+        <button
           onClick={() => setActiveTab('resumo')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'resumo' ? 'bg-gold/10 text-gold border border-gold/20' : 'text-slate-400 hover:bg-white/5'}`}
         >
           <LayoutDashboard size={18} />
           Resumo
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('despesas')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'despesas' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-slate-400 hover:bg-white/5'}`}
         >
           <Receipt size={18} />
           Despesas da Cota
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('frentes')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'frentes' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-slate-400 hover:bg-white/5'}`}
         >
           <Flag size={18} />
           Frentes Parlamentares
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('votacoes')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'votacoes' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-slate-400 hover:bg-white/5'}`}
         >
@@ -315,27 +327,56 @@ export default function DeputadoDetailPage() {
                 </div>
               </div>
 
+              {loadingSecretarios && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+                </div>
+              )}
+
+              {errorSecretarios && (
+                <div className="py-4 text-center text-sm text-red-400">
+                  <p>Erro ao carregar secretários. Tente novamente mais tarde.</p>
+                </div>
+              )}
+
+              {!loadingSecretarios && !errorSecretarios && secretarios && secretarios.length > 0 && (
+                <div className="space-y-2 max-h-[280px] overflow-y-auto pr-2">
+                  {secretarios.map((sec) => (
+                    <div key={sec.ponto} className="p-3 bg-navy/30 rounded-xl border border-white/5 space-y-1 hover:border-purple-500/20 transition-all">
+                      <p className="text-slate-300 text-sm font-medium leading-tight">{sec.nome}</p>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                        <span>{sec.cargo}</span>
+                        <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
+                        <span>{sec.situacao}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!loadingSecretarios && !errorSecretarios && secretarios?.length === 0 && (
+                <div className="py-4 text-center text-sm text-slate-500">
+                  <p>Nenhum secretário parlamentar encontrado para este gabinete.</p>
+                </div>
+              )}
+
               <div className="p-4 bg-navy/30 rounded-xl border border-white/5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400 text-sm">Limite máximo</span>
-                  <span className="text-white font-black text-lg">25 assessores</span>
+                  <span className="text-slate-400 text-sm">Assessores ativos</span>
+                  <span className="text-white font-black text-lg">{secretarios?.length || 0} de 25</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400 text-sm">Verba mensal total</span>
-                  <span className="text-gold font-black">R$ 111.675,59</span>
+                  <span className="text-slate-400 text-sm">Gabinete vinculado</span>
+                  <span className="text-slate-300 text-xs font-medium text-right max-w-[160px] truncate">
+                    {secretarios?.[0]?.lotacao || 'Não identificado'}
+                  </span>
                 </div>
               </div>
 
               <div className="flex items-start gap-2 text-slate-500 text-xs">
                 <Info size={14} className="shrink-0 mt-0.5" />
                 <p>
-                  A API da Câmara não disponibiliza a lista de assessores individual por deputado via REST.
-                  Esses dados estão disponíveis apenas via download do{' '}
-                  <a href="https://dadosabertos.camara.leg.br/swagger/api.html?tab=staticfile"
-                    target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
-                    arquivo completo de funcionários
-                  </a>.
-                  Cada deputado pode ter até 25 secretários parlamentares, custeados pela verba de gabinete.
+                  Os dados de assessores são sincronizados de uma base externa e podem levar alguns minutos para atualizar.
                 </p>
               </div>
             </div>

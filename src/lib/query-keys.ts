@@ -7,6 +7,7 @@ export const queryKeys = {
     detail: (id: number) => [...queryKeys.deputados.details(), id] as const,
     despesas: (id: number, filters: Record<string, unknown>) => [...queryKeys.deputados.all, 'despesas', id, filters] as const,
     frentes: (id: number) => [...queryKeys.deputados.all, 'frentes', id] as const,
+    secretarios: (gabineteNome: string) => [...queryKeys.deputados.all, 'secretarios', gabineteNome] as const,
   },
   partidos: {
     all: ['partidos'] as const,
