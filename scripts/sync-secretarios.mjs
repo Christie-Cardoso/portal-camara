@@ -66,19 +66,17 @@ async function syncSecretarios() {
             if (cargoValue.trim().startsWith('SP')) {
               const pontoValue = String(row['ponto'] || '').replace(/^"|"$/g, '');
               const nomeValue = String(row['nome'] || '').replace(/^"|"$/g, '');
-              const idLegislaturaValue = row['id_legislatura'] || null;
               const lotacaoValue = String(row['lotacao'] || '').replace(/^"|"$/g, '');
-              const situacaoValue = String(row['situacao'] || '').replace(/^"|"$/g, '');
-              const siglaUfValue = String(row['siglaUF'] || '').replace(/^"|"$/g, '');
+              const dataInicioHistoricoValue = String(row['dataInicioHistorico'] || '').replace(/^"|"$/g, '');
+              const grupoValue = String(row['grupo'] || '').replace(/^"|"$/g, '');
 
               chunk.push({
                 ponto: pontoValue || null,
                 nome: nomeValue,
-                id_legislatura: idLegislaturaValue ? parseInt(idLegislaturaValue, 10) : null,
                 cargo: cargoValue,
                 lotacao: lotacaoValue,
-                situacao: situacaoValue,
-                sigla_uf: siglaUfValue,
+                data_inicio_historico: dataInicioHistoricoValue || null,
+                grupo: grupoValue || null,
               });
 
               if (chunk.length >= CHUNK_SIZE) {

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, use } from 'react';
 import { useDeputado, useDeputadoDespesas, useDeputadoOrgaos, useDeputadoFrentes, useVotacoes, useVotacaoVotos, useSecretarios } from '@/hooks/use-camara';
+import { hasSupabaseConfig } from '@/lib/supabase';
 import { ErrorState } from '@/components/ErrorState';
 import { Pagination } from '@/components/Pagination';
 import { SpinnerFullPage, TableSkeleton } from '@/components/LoadingState';
@@ -344,10 +345,20 @@ export default function DeputadoDetailPage() {
                   {secretarios.map((sec) => (
                     <div key={sec.ponto} className="p-3 bg-navy/30 rounded-xl border border-white/5 space-y-1 hover:border-purple-500/20 transition-all">
                       <p className="text-slate-300 text-sm font-medium leading-tight">{sec.nome}</p>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                        <span>{sec.cargo}</span>
-                        <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
-                        <span>{sec.situacao}</span>
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
+                        <span className="font-bold text-slate-400">{sec.cargo}</span>
+                        {sec.grupo && (
+                          <>
+                            <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
+                            <span className="italic">{sec.grupo}</span>
+                          </>
+                        )}
+                        {sec.data_inicio_historico && (
+                          <>
+                            <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
+                            <span>Desde: {new Date(sec.data_inicio_historico).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -357,6 +368,12 @@ export default function DeputadoDetailPage() {
               {!loadingSecretarios && !errorSecretarios && secretarios?.length === 0 && (
                 <div className="py-4 text-center text-sm text-slate-500">
                   <p>Nenhum secretário parlamentar encontrado para este gabinete.</p>
+                </div>
+              )}
+
+              {!hasSupabaseConfig() && (
+                <div className="py-4 text-center text-sm text-slate-500">
+                  <p>Dados de secretários indisponíveis (Ambiente não configurado).</p>
                 </div>
               )}
 
