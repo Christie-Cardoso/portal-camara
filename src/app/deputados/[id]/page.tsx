@@ -25,7 +25,23 @@ function formatCurrency(v: number): string {
 }
 
 const CURRENT_YEAR = 2026;
-const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
+const YEARS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i); // 2026, 2025, 2024, 2023
+
+const MONTHS = [
+  { value: 'all', label: 'Todos os meses' },
+  { value: '01', label: 'Janeiro' },
+  { value: '02', label: 'Fevereiro' },
+  { value: '03', label: 'Março' },
+  { value: '04', label: 'Abril' },
+  { value: '05', label: 'Maio' },
+  { value: '06', label: 'Junho' },
+  { value: '07', label: 'Julho' },
+  { value: '08', label: 'Agosto' },
+  { value: '09', label: 'Setembro' },
+  { value: '10', label: 'Outubro' },
+  { value: '11', label: 'Novembro' },
+  { value: '12', label: 'Dezembro' },
+];
 
 const ORGAOS_MAP: Record<string, string> = {
   'PLEN': 'Plenário da Câmara dos Deputados',
@@ -362,9 +378,26 @@ export default function DeputadoDetailPage() {
   const [year, setYear] = useState(CURRENT_YEAR);
   const [despesaPage, setDespesaPage] = useState(1);
   const [votacaoPage, setVotacaoPage] = useState(1);
-  const [votacaoItens, setVotacaoItens] = useState(50);
+  const [votacaoItens, setVotacaoItens] = useState(10);
+  const [votacaoYear, setVotacaoYear] = useState('2026');
+  const [votacaoMonth, setVotacaoMonth] = useState('all');
   const [frentesSearch, setFrentesSearch] = useState('');
   const [showAllFrentes, setShowAllFrentes] = useState(false);
+
+  // Cálculo das datas baseado nos seletores de ano e mês
+  const { votacaoDataInicio, votacaoDataFim } = useMemo(() => {
+    if (votacaoMonth === 'all') {
+      // Se 'todos os meses', apenas data de início para evitar o erro de 3 meses da API
+      return { votacaoDataInicio: `${votacaoYear}-01-01`, votacaoDataFim: undefined };
+    } else {
+      // Se mês específico, define janelas seguras de 1 mês
+      const lastDay = new Date(parseInt(votacaoYear), parseInt(votacaoMonth), 0).getDate();
+      return {
+        votacaoDataInicio: `${votacaoYear}-${votacaoMonth}-01`,
+        votacaoDataFim: `${votacaoYear}-${votacaoMonth}-${lastDay}`
+      };
+    }
+  }, [votacaoYear, votacaoMonth]);
 
   const { data: dep, isLoading, isError, refetch } = useDeputado(deputadoId);
   const { data: despesasData, isLoading: loadingDesp, isFetching: fetchingDesp } = useDeputadoDespesas(deputadoId, {
@@ -375,10 +408,9 @@ export default function DeputadoDetailPage() {
   const { data: orgaosData, isLoading: loadingOrgaos } = useDeputadoOrgaos(deputadoId);
   const { data: frentesData, isLoading: loadingFrentes } = useDeputadoFrentes(deputadoId);
 
-  // Get all votações from the current legislature (since Feb 2023)
-  const dataInicio = '2023-02-01';
   const { data: votacoesData, isLoading: loadingVotacoes } = useVotacoes({
-    dataInicio,
+    dataInicio: votacaoDataInicio,
+    dataFim: votacaoDataFim,
     pagina: votacaoPage,
     itens: votacaoItens,
   });
@@ -938,6 +970,39 @@ export default function DeputadoDetailPage() {
               <div>
                 <h2 className="text-2xl font-bold text-white">Votações Recentes</h2>
                 <p className="text-slate-500 text-xs">Últimas votações do Plenário e Comissões — clique para ver o voto do deputado</p>
+              </div>
+            </div>
+
+            {/* FILTROS DE PERÍODO */}
+            <div className="flex flex-wrap items-center gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <Calendar size={14} className="text-blue-400" />
+                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Ano:</span>
+                <select 
+                  value={votacaoYear}
+                  onChange={(e) => { setVotacaoYear(e.target.value); setVotacaoPage(1); }}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer hover:bg-white/10"
+                >
+                  {YEARS.map(y => <option key={y} value={y} className="bg-navy">{y}</option>)}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <History size={14} className="text-gold" />
+                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Mês:</span>
+                <select 
+                  value={votacaoMonth}
+                  onChange={(e) => { setVotacaoMonth(e.target.value); setVotacaoPage(1); }}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer hover:bg-white/10"
+                >
+                  {MONTHS.map(m => <option key={m.value} value={m.value} className="bg-navy">{m.label}</option>)}
+                </select>
+              </div>
+
+              <div className="ml-auto">
+                <span className="px-3 py-1.5 bg-blue-500/10 text-blue-400 text-[10px] font-black rounded-full border border-blue-500/20 uppercase tracking-tighter">
+                  Período: {votacaoYear} {votacaoMonth !== 'all' ? `/ ${MONTHS.find(m => m.value === votacaoMonth)?.label}` : ''}
+                </span>
               </div>
             </div>
 
