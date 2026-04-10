@@ -11,6 +11,8 @@ import {
   fetchPartidos,
   fetchVotacoes,
   fetchVotacaoVotos,
+  fetchVotacaoById,
+  fetchVotacaoOrientacoes,
 } from '@/lib/camara';
 import { supabase, hasSupabaseConfig } from '@/lib/supabase';
 
@@ -96,6 +98,24 @@ export function useVotacaoVotos(idVotacao: string) {
     queryKey: queryKeys.votacoes.votos(idVotacao),
     queryFn: () => fetchVotacaoVotos(idVotacao),
     enabled: !!idVotacao,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function useVotacao(id: string) {
+  return useQuery({
+    queryKey: [...queryKeys.votacoes.all, 'detail', id],
+    queryFn: () => fetchVotacaoById(id),
+    enabled: !!id,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function useVotacaoOrientacoes(id: string) {
+  return useQuery({
+    queryKey: [...queryKeys.votacoes.all, 'orientacoes', id],
+    queryFn: () => fetchVotacaoOrientacoes(id),
+    enabled: !!id,
     staleTime: 30 * 60 * 1000,
   });
 }
