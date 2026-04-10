@@ -20,6 +20,7 @@ function DeputadosContent() {
   const initialQ = searchParams.get('q') || '';
 
   const [page, setPage] = useState(1);
+  const [itensPerPage, setItensPerPage] = useState(20);
   const [searchInput, setSearchInput] = useState(initialQ);
   const [query, setQuery] = useState(initialQ);
   const [selectedPartido, setSelectedPartido] = useState('');
@@ -27,7 +28,7 @@ function DeputadosContent() {
 
   const { data, isLoading, isError, refetch, isFetching } = useDeputados({
     pagina: page,
-    itens: 20,
+    itens: itensPerPage,
     nome: query || undefined,
     siglaPartido: selectedPartido || undefined,
     siglaUf: selectedUF || undefined,
@@ -37,6 +38,7 @@ function DeputadosContent() {
 
   const deputados = data?.items || [];
   const hasNext = data?.hasNext || false;
+  const totalPaginas = data?.totalPaginas;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +134,14 @@ function DeputadosContent() {
           </div>
         )}
 
-        <Pagination page={page} hasNext={hasNext} onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+        <Pagination 
+          page={page} 
+          totalPaginas={totalPaginas}
+          hasNext={hasNext} 
+          itensPerPage={itensPerPage}
+          onItensPerPageChange={(n) => { setItensPerPage(n); setPage(1); }}
+          onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+        />
       </div>
     </div>
   );

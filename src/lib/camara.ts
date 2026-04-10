@@ -100,6 +100,7 @@ export interface Frente {
 export interface PaginatedResponse<T> {
   items: T[];
   hasNext: boolean;
+  totalPaginas?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -162,9 +163,17 @@ export async function fetchDeputados(params: DeputadosParams = {}): Promise<Pagi
     links: Array<{ rel: string; href: string }>;
   }>(url);
 
+  const lastLink = data.links?.find(l => l.rel === 'last');
+  let totalPaginas = undefined;
+  if (lastLink) {
+    const match = lastLink.href.match(/[?&]pagina=(\d+)/);
+    if (match) totalPaginas = match ? parseInt(match[1]) : undefined;
+  }
+
   return {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
+    totalPaginas,
   };
 }
 
@@ -351,6 +360,43 @@ export interface Votacao {
   aprovacao: number;
 }
 
+export interface VotacaoDetalhada extends Omit<Votacao, 'proposicaoObjeto'> {
+  dataHoraUltimaAberturaVotacao: string;
+  descUltimaAberturaVotacao: string;
+  proposicaoObjeto: {
+    id: number;
+    uri: string;
+    siglaTipo: string;
+    codTipo: number;
+    numero: number;
+    ano: number;
+    ementa: string;
+  } | null;
+  ultimaApresentacaoProposicao?: {
+    dataHoraRegistro: string | null;
+    descricao: string;
+    uriProposicaoCitada: string | null;
+  };
+  objetosPossiveis?: Array<{
+    id: number;
+    uri: string;
+    siglaTipo: string;
+    codTipo: number;
+    numero: number;
+    ano: number;
+    ementa: string;
+    dataApresentacao: string;
+  }>;
+}
+
+export interface Orientacao {
+  siglaPartidoBloco: string;
+  orientacaoVoto: string;
+  codPartidoBloco: number;
+  codTipoLideranca: string;
+  uriPartidoBloco: string;
+}
+
 export async function fetchVotacoes(params: {
   dataInicio?: string;
   dataFim?: string;
@@ -367,9 +413,17 @@ export async function fetchVotacoes(params: {
     links: Array<{ rel: string; href: string }>;
   }>(url);
 
+  const lastLink = data.links?.find(l => l.rel === 'last');
+  let totalPaginas = undefined;
+  if (lastLink) {
+    const match = lastLink.href.match(/[?&]pagina=(\d+)/);
+    if (match) totalPaginas = parseInt(match[1]);
+  }
+
   return {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
+    totalPaginas,
   };
 }
 
@@ -398,6 +452,28 @@ export async function fetchVotacaoVotos(idVotacao: string): Promise<VotoDeputado
 
   try {
     const data = await camaraFetch<{ dados: VotoDeputado[] }>(url);
+    return data.dados || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchVotacaoById(id: string): Promise<VotacaoDetalhada | null> {
+  const url = buildUrl(`/votacoes/${id}`);
+
+  try {
+    const data = await camaraFetch<{ dados: VotacaoDetalhada }>(url);
+    return data.dados || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchVotacaoOrientacoes(id: string): Promise<Orientacao[]> {
+  const url = buildUrl(`/votacoes/${id}/orientacoes`);
+
+  try {
+    const data = await camaraFetch<{ dados: Orientacao[] }>(url);
     return data.dados || [];
   } catch {
     return [];

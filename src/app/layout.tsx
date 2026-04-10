@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-br" className="dark" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-navy text-foreground overflow-x-hidden`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-navy text-foreground overflow-x-hidden`} suppressHydrationWarning>
         <QueryProvider>
           <nav className="fixed top-0 w-full z-50 bg-navy/80 backdrop-blur-md border-b border-slate-card">
             <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="flex items-center gap-8 text-sm font-medium text-slate-400">
                 <Link href="/" className="hover:text-gold transition-colors">Início</Link>
                 <Link href="/deputados" className="hover:text-gold transition-colors">Deputados</Link>
-                <Link href="/comparativo" className="hover:text-gold transition-colors text-gold">Comparativo</Link>
+                <Link href="/comparativo" className="hover:text-gold transition-colors">Comparativo</Link>
                 <Link href="/sobre" className="hover:text-gold transition-colors">Sobre</Link>
               </div>
             </div>
