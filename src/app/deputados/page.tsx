@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useDeputados, usePartidos } from '@/hooks/use-camara';
 import { DeputadoGridSkeleton } from '@/components/LoadingState';
 import { ErrorState } from '@/components/ErrorState';
 import { Pagination } from '@/components/Pagination';
-import { Search, Users, SearchX } from 'lucide-react';
+import { Search, Users, SearchX, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -25,6 +25,7 @@ function DeputadosContent() {
   const [query, setQuery] = useState(initialQ);
   const [selectedPartido, setSelectedPartido] = useState('');
   const [selectedUF, setSelectedUF] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   const { data, isLoading, isError, refetch, isFetching } = useDeputados({
     pagina: page,
@@ -42,9 +43,35 @@ function DeputadosContent() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setQuery(searchInput);
-    setPage(1);
+    if (searchInput.length >= 3 || searchInput.length === 0) {
+      setQuery(searchInput);
+      setPage(1);
+    }
   };
+
+  useEffect(() => {
+    // Se o input for menor que 3 caracteres, resetamos a query de nome
+    if (searchInput.length < 3) {
+      if (query !== '') {
+        setQuery('');
+        setPage(1);
+      }
+      setIsSearching(false);
+      return;
+    }
+
+    // Indica que estamos aguardando o debounce
+    setIsSearching(true);
+
+    // Só dispara a busca automática se tiver no mínimo 3 caracteres
+    const timer = setTimeout(() => {
+      setQuery(searchInput);
+      setPage(1);
+      setIsSearching(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchInput, query]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 space-y-12">
@@ -61,7 +88,11 @@ function DeputadosContent() {
       <div className="space-y-4">
         <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
           <div className="absolute inset-y-0 left-4 flex items-center text-slate-500">
-            <Search size={20} />
+            {isSearching || isFetching ? (
+              <Loader2 size={20} className="animate-spin text-gold" />
+            ) : (
+              <Search size={20} />
+            )}
           </div>
           <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Buscar deputado por nome..."
@@ -102,11 +133,11 @@ function DeputadosContent() {
           </div>
         </div>
 
-        {isLoading && <DeputadoGridSkeleton count={20} />}
+        {(isLoading || (isFetching && deputados.length === 0)) && <DeputadoGridSkeleton count={20} />}
         {isError && <ErrorState onRetry={() => refetch()} />}
 
         {!isLoading && !isError && deputados.length > 0 && (
-          <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 transition-opacity duration-300 ${isFetching ? 'opacity-60' : ''}`}>
+          <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 transition-opacity duration-300 ${isFetching ? 'opacity-40' : ''}`}>
             {deputados.map((dep) => (
               <Link key={dep.id} href={`/deputados/${dep.id}`}
                 className="bg-slate-card border border-white/5 rounded-2xl overflow-hidden hover:border-gold/30 transition-all group">
