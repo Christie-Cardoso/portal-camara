@@ -13,6 +13,14 @@ import {
   fetchVotacaoVotos,
   fetchVotacaoById,
   fetchVotacaoOrientacoes,
+  fetchDeputadoHistorico,
+  fetchDeputadoDiscursos,
+  fetchDeputadoOcupacoes,
+  fetchDeputadoProfissoes,
+  fetchProposicoes,
+  fetchProposicaoById,
+  fetchProposicaoAutores,
+  fetchProposicaoTotals,
 } from '@/lib/camara';
 import { supabase, hasSupabaseConfig } from '@/lib/supabase';
 
@@ -153,3 +161,81 @@ export function useSecretarios(gabineteNome: string | undefined) {
 }
 
 
+export function useDeputadoHistorico(id: number) {
+  return useQuery({
+    queryKey: [...queryKeys.deputados.all, 'historico', id],
+    queryFn: () => fetchDeputadoHistorico(id),
+    enabled: !!id,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function useDeputadoDiscursos(
+  id: number,
+  filters: { dataInicio?: string; dataFim?: string; pagina?: number; itens?: number } = {}
+) {
+  return useQuery({
+    queryKey: [...queryKeys.deputados.all, 'discursos', id, filters],
+    queryFn: () => fetchDeputadoDiscursos(id, filters),
+    enabled: !!id,
+    placeholderData: keepPreviousData,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+export function useDeputadoOcupacoes(id: number) {
+  return useQuery({
+    queryKey: [...queryKeys.deputados.all, 'ocupacoes', id],
+    queryFn: () => fetchDeputadoOcupacoes(id),
+    enabled: !!id,
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
+export function useDeputadoProfissoes(id: number) {
+  return useQuery({
+    queryKey: [...queryKeys.deputados.all, 'profissoes', id],
+    queryFn: () => fetchDeputadoProfissoes(id),
+    enabled: !!id,
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
+export function useProposicoesByAutor(
+  idDeputadoAutor: number,
+  filters: { pagina?: number; itens?: number; dataInicio?: string; dataFim?: string; ano?: number } = {}
+) {
+  return useQuery({
+    queryKey: ['proposicoes', 'autor', idDeputadoAutor, filters],
+    queryFn: () => fetchProposicoes({ idDeputadoAutor, ...filters }),
+    enabled: !!idDeputadoAutor,
+    placeholderData: keepPreviousData,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+export function useProposicao(id: number) {
+  return useQuery({
+    queryKey: ['proposicao', 'detail', id],
+    queryFn: () => fetchProposicaoById(id),
+    enabled: !!id,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function useProposicaoAutores(id: number) {
+  return useQuery({
+    queryKey: ['proposicao', 'autores', id],
+    queryFn: () => fetchProposicaoAutores(id),
+    enabled: !!id,
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
+export function useProposicaoTotals(id: number, filters: { ano?: number; dataInicio?: string; dataFim?: string } = {}) {
+  return useQuery({
+    queryKey: ['proposicao', 'totals', id, filters],
+    queryFn: () => fetchProposicaoTotals(id, filters),
+    enabled: !!id,
+    staleTime: 6 * 60 * 60 * 1000, // 6 hours
+  });
+}
