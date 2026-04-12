@@ -11,8 +11,8 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 
 const ESTADOS_BR = [
-  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA',
-  'PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA',
+  'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
 function DeputadosContent() {
@@ -60,7 +60,6 @@ function DeputadosContent() {
       return;
     }
 
-    // Indica que estamos aguardando o debounce
     setIsSearching(true);
 
     // Só dispara a busca automática se tiver no mínimo 3 caracteres
@@ -165,13 +164,13 @@ function DeputadosContent() {
           </div>
         )}
 
-        <Pagination 
-          page={page} 
+        <Pagination
+          page={page}
           totalPaginas={totalPaginas}
-          hasNext={hasNext} 
+          hasNext={hasNext}
           itensPerPage={itensPerPage}
           onItensPerPageChange={(n) => { setItensPerPage(n); setPage(1); }}
-          onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+          onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         />
       </div>
     </div>
