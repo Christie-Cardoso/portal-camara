@@ -88,5 +88,3 @@ pnpm dev
 
 Este projeto é desenvolvido para fins informativos e utiliza dados públicos sob a **Lei de Acesso à Informação (LAI)**.
 
----
-*Desenvolvido com ❤️ para a transparência pública brasileira.*

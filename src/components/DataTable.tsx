@@ -16,6 +16,7 @@ interface DataTableProps<TData> {
   data: TData[];
   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
   getRowCanExpand?: (row: Row<TData>) => boolean;
+  getRowId?: (row: TData) => string;
   isLoading?: boolean;
 }
 
@@ -24,6 +25,7 @@ export function DataTable<TData>({
   data,
   renderSubComponent,
   getRowCanExpand,
+  getRowId,
   isLoading,
 }: DataTableProps<TData>) {
   const table = useReactTable({
@@ -32,6 +34,7 @@ export function DataTable<TData>({
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getRowCanExpand,
+    getRowId,
   });
 
   return (

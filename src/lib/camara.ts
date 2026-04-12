@@ -73,6 +73,11 @@ export interface Despesa {
   valorGlosa: number;
 }
 
+export interface AggregateExpense {
+  name: string;
+  value: number;
+}
+
 export interface Partido {
   id: number;
   sigla: string;
@@ -88,6 +93,86 @@ export interface Proposicao {
   numero: number;
   ano: number;
   ementa: string;
+  dataApresentacao: string;
+  statusProposicao?: {
+    dataHora: string;
+    sequencia: number;
+    siglaOrgao: string;
+    uriOrgao: string;
+    regime: string;
+    descricaoTramitacao: string;
+    idTipoTramitacao: string;
+    descricaoSituacao: string | null;
+    idSituacao: number | null;
+    despacho: string;
+    url: string;
+    ambito?: string;
+    uriUltimoRelator?: string;
+  };
+  urlInteiroTeor?: string;
+  uriAutores?: string;
+}
+
+export interface ProposicaoAutor {
+  nome: string;
+  uri: string;
+  codTipo: number;
+  tipo: string;
+}
+
+export interface ProposicaoTotals {
+  counts: Record<string, number>;
+  total: number;
+}
+
+export interface HistoricoDeputado {
+  id: number;
+  uri: string;
+  nome: string;
+  siglaPartido: string;
+  uriPartido: string;
+  siglaUf: string;
+  idLegislatura: number;
+  urlFoto: string;
+  email: string | null;
+  data: string;
+  idCondicaoEleitoral: number;
+  condicaoEleitoral: string;
+  descricaoStatus: string | null;
+}
+
+export interface Discurso {
+  dataHoraInicio: string;
+  dataHoraFim: string | null;
+  uriEvento: string;
+  faseEvento: {
+    titulo: string;
+    dataHoraInicio: string | null;
+    dataHoraFim: string | null;
+  };
+  tipoDiscurso: string;
+  urlTexto: string | null;
+  urlAudio: string | null;
+  urlVideo: string | null;
+  keywords: string;
+  sumario: string;
+  transcricao: string;
+}
+
+export interface Ocupacao {
+  titulo: string;
+  entidade: string;
+  entidadeUF: string;
+  entidadePais: string;
+  anoInicio: number;
+  anoFim: number | null;
+}
+
+export interface Profissao {
+  id: number;
+  dataHora: string;
+  codTipoProfissao: number;
+  titulo: string;
 }
 
 export interface Frente {
@@ -127,13 +212,17 @@ async function camaraFetch<T>(url: string): Promise<T> {
   }
 }
 
-function buildUrl(path: string, params: Record<string, string | number | undefined> = {}): string {
+function buildUrl(path: string, params: Record<string, any> = {}): string {
   // Use window.location.origin if in browser to handle relative BASE_URL
   const base = IS_BROWSER ? window.location.origin + BASE_URL : BASE_URL;
   const url = new URL(`${base}${path}`);
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== '' && value !== null) {
-      url.searchParams.set(key, String(value));
+      if (Array.isArray(value)) {
+        value.forEach(v => url.searchParams.append(key, String(v)));
+      } else {
+        url.searchParams.set(key, String(value));
+      }
     }
   }
   return url.toString();
@@ -213,9 +302,17 @@ export async function fetchDeputadoDespesas(
     links: Array<{ rel: string; href: string }>;
   }>(url);
 
+  const lastLink = data.links?.find(l => l.rel === 'last');
+  let totalPaginas = undefined;
+  if (lastLink) {
+    const match = lastLink.href.match(/[?&]pagina=(\d+)/);
+    if (match) totalPaginas = parseInt(match[1]);
+  }
+
   return {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
+    totalPaginas,
   };
 }
 
@@ -244,7 +341,10 @@ export async function fetchPartidos(params: { pagina?: number; itens?: number } 
 
 export async function fetchProposicoes(params: {
   siglaTipo?: string;
+  idDeputadoAutor?: number;
   ano?: number;
+  dataInicio?: string;
+  dataFim?: string;
   pagina?: number;
   itens?: number;
 } = {}): Promise<PaginatedResponse<Proposicao>> {
@@ -261,9 +361,97 @@ export async function fetchProposicoes(params: {
     links: Array<{ rel: string; href: string }>;
   }>(url);
 
+  const lastLink = data.links?.find(l => l.rel === 'last');
+  let totalPaginas = undefined;
+  if (lastLink) {
+    const match = lastLink.href.match(/[?&]pagina=(\d+)/);
+    if (match) totalPaginas = parseInt(match[1]);
+  }
+
   return {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
+    totalPaginas,
+  };
+}
+
+export async function fetchDeputadoDespesasAggregation(id: number, year: number): Promise<AggregateExpense[]> {
+  const firstPage = await fetchDeputadoDespesas(id, { ano: year, itens: 100, pagina: 1 });
+  
+  if (firstPage.items.length === 0) return [];
+  
+  const allDespesas = [...firstPage.items];
+  const totalPaginas = firstPage.totalPaginas || 1;
+  
+  if (totalPaginas > 1) {
+    const pages = Array.from({ length: totalPaginas - 1 }, (_, i) => i + 2);
+    const results = await Promise.all(
+      pages.map(p => fetchDeputadoDespesas(id, { ano: year, itens: 100, pagina: p }))
+    );
+    results.forEach(res => allDespesas.push(...res.items));
+  }
+  
+  const map: Record<string, number> = {};
+  allDespesas.forEach(d => {
+    map[d.tipoDespesa] = (map[d.tipoDespesa] || 0) + d.valorLiquido;
+  });
+  
+  return Object.entries(map)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+}
+
+export async function fetchProposicaoById(id: number): Promise<Proposicao | null> {
+  const url = buildUrl(`/proposicoes/${id}`);
+
+  try {
+    const data = await camaraFetch<{ dados: Proposicao }>(url);
+    return data.dados || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchProposicaoAutores(id: number): Promise<ProposicaoAutor[]> {
+  const url = buildUrl(`/proposicoes/${id}/autores`);
+
+  try {
+    const data = await camaraFetch<{ dados: ProposicaoAutor[] }>(url);
+    return data.dados || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchProposicaoTotals(
+  idDeputadoAutor: number, 
+  filters: { ano?: number; dataInicio?: string; dataFim?: string } = {}
+): Promise<ProposicaoTotals> {
+  const firstPage = await fetchProposicoes({ idDeputadoAutor, itens: 100, ...filters, pagina: 1 });
+  
+  if (firstPage.items.length === 0) {
+    return { counts: {}, total: 0 };
+  }
+
+  const totalPaginas = firstPage.totalPaginas || 1;
+  const allProposicoes = [...firstPage.items];
+
+  if (totalPaginas > 1) {
+    const remainingPages = Array.from({ length: totalPaginas - 1 }, (_, i) => i + 2);
+    const otherPages = await Promise.all(
+      remainingPages.map(p => fetchProposicoes({ idDeputadoAutor, itens: 100, ...filters, pagina: p }))
+    );
+    otherPages.forEach(p => allProposicoes.push(...p.items));
+  }
+
+  const counts: Record<string, number> = {};
+  allProposicoes.forEach(p => {
+    counts[p.siglaTipo] = (counts[p.siglaTipo] || 0) + 1;
+  });
+
+  return {
+    counts,
+    total: allProposicoes.length,
   };
 }
 
@@ -474,6 +662,74 @@ export async function fetchVotacaoOrientacoes(id: string): Promise<Orientacao[]>
 
   try {
     const data = await camaraFetch<{ dados: Orientacao[] }>(url);
+    return data.dados || [];
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// HISTÓRICO / TRAJETÓRIA
+// ---------------------------------------------------------------------------
+
+export async function fetchDeputadoHistorico(id: number): Promise<HistoricoDeputado[]> {
+  const url = buildUrl(`/deputados/${id}/historico`);
+  try {
+    const data = await camaraFetch<{ dados: HistoricoDeputado[] }>(url);
+    return data.dados || [];
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// DISCURSOS
+// ---------------------------------------------------------------------------
+
+export async function fetchDeputadoDiscursos(
+  id: number,
+  params: { dataInicio?: string; dataFim?: string; pagina?: number; itens?: number } = {}
+): Promise<PaginatedResponse<Discurso>> {
+  const { pagina = 1, itens = 10 } = params;
+  const url = buildUrl(`/deputados/${id}/discursos`, { ...params, ordenarPor: 'dataHoraInicio', ordem: 'DESC' });
+
+  const data = await camaraFetch<{
+    dados: Discurso[];
+    links: Array<{ rel: string; href: string }>;
+  }>(url);
+
+  const lastLink = data.links?.find(l => l.rel === 'last');
+  let totalPaginas = undefined;
+  if (lastLink) {
+    const match = lastLink.href.match(/[?&]pagina=(\d+)/);
+    if (match) totalPaginas = parseInt(match[1]);
+  }
+
+  return {
+    items: data.dados || [],
+    hasNext: data.links?.some(l => l.rel === 'next') || false,
+    totalPaginas,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// OCUPAÇÕES E PROFISSÕES
+// ---------------------------------------------------------------------------
+
+export async function fetchDeputadoOcupacoes(id: number): Promise<Ocupacao[]> {
+  const url = buildUrl(`/deputados/${id}/ocupacoes`);
+  try {
+    const data = await camaraFetch<{ dados: Ocupacao[] }>(url);
+    return data.dados || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchDeputadoProfissoes(id: number): Promise<Profissao[]> {
+  const url = buildUrl(`/deputados/${id}/profissoes`);
+  try {
+    const data = await camaraFetch<{ dados: Profissao[] }>(url);
     return data.dados || [];
   } catch {
     return [];
