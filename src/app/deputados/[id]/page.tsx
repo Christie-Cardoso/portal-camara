@@ -18,9 +18,11 @@ import {
   useProposicoesByAutor,
   useProposicao,
   useProposicaoAutores,
-  useProposicaoTotals
+  useProposicaoTotals,
+  useDeputadoDespesasAggregation
 } from '@/hooks/use-camara';
 import { PROPOSICOES_MAP } from '@/lib/constants';
+import { ExpensesDonutChart } from '@/components/ExpensesDonutChart';
 import { hasSupabaseConfig } from '@/lib/supabase';
 import { ErrorState } from '@/components/ErrorState';
 import { Pagination } from '@/components/Pagination';
@@ -51,7 +53,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import type { Votacao, VotoDeputado, Proposicao } from '@/lib/camara';
+import type { Votacao, VotoDeputado, Proposicao, Despesa } from '@/lib/camara';
 
 function formatCurrency(v: number): string {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -593,7 +595,9 @@ export default function DeputadoDetailPage() {
   const deputadoId = parseInt(params.id);
 
   const [activeTab, setActiveTab] = useState('resumo');
-  const [year, setYear] = useState(CURRENT_YEAR);
+  const [despesaYear, setDespesaYear] = useState(CURRENT_YEAR);
+  const [despesaMonth, setDespesaMonth] = useState('all');
+  const [despesaItens, setDespesaItens] = useState(15);
   const [despesaPage, setDespesaPage] = useState(1);
   const [votacaoPage, setVotacaoPage] = useState(1);
   const [votacaoItens, setVotacaoItens] = useState(10);
@@ -612,6 +616,9 @@ export default function DeputadoDetailPage() {
   const [discursoPage, setDiscursoPage] = useState(1);
   const [discursoItens, setDiscursoItens] = useState(10);
   const [expandedDiscurso, setExpandedDiscurso] = useState<number | null>(null);
+
+  // Estado para o ano no gráfico de despesas (Resumo)
+  const [expenseSelectedYear, setExpenseSelectedYear] = useState(new Date().getFullYear());
 
   // Cálculo das datas baseado nos seletores de ano e mês
   const { votacaoDataInicio, votacaoDataFim } = useMemo(() => {
@@ -675,9 +682,10 @@ export default function DeputadoDetailPage() {
 
   const { data: dep, isLoading, isError, refetch } = useDeputado(deputadoId);
   const { data: despesasData, isLoading: loadingDesp, isFetching: fetchingDesp } = useDeputadoDespesas(deputadoId, {
-    ano: year,
+    ano: despesaYear,
+    mes: despesaMonth === 'all' ? undefined : parseInt(despesaMonth),
     pagina: despesaPage,
-    itens: 15,
+    itens: despesaItens,
   });
   const { data: orgaosData, isLoading: loadingOrgaos } = useDeputadoOrgaos(deputadoId);
   const { data: frentesData, isLoading: loadingFrentes } = useDeputadoFrentes(deputadoId);
@@ -709,6 +717,7 @@ export default function DeputadoDetailPage() {
   const hasNextProposicoes = proposicoesData?.hasNext || false;
 
   const despesas = despesasData?.items || [];
+  const totalPaginasDespesas = despesasData?.totalPaginas;
   const hasNextDesp = despesasData?.hasNext || false;
   const orgaos = orgaosData?.items?.filter(o => !o.dataFim) || []; // only active
   const frentes = frentesData || [];
@@ -727,6 +736,13 @@ export default function DeputadoDetailPage() {
     isError: errorSecretarios,
     error: secretarioError
   } = useSecretarios(searchName);
+
+  const { data: aggregatedExpenses, isLoading: loadingAggregatedExpenses } = useDeputadoDespesasAggregation(deputadoId, expenseSelectedYear);
+  const { data: tabAggregatedExpenses, isLoading: loadingTabAggregatedExpenses } = useDeputadoDespesasAggregation(deputadoId, despesaYear);
+  
+  const totalAnualCota = useMemo(() => {
+    return tabAggregatedExpenses?.reduce((acc, curr) => acc + curr.value, 0) || 0;
+  }, [tabAggregatedExpenses]);
 
   // ---------------------------------------------------------------------------
   // VOTATIONS TABLE CONFIGURATION
@@ -899,6 +915,60 @@ export default function DeputadoDetailPage() {
       }
     }
   ], []);
+  
+  const despesaColumns = useMemo<ColumnDef<Despesa>[]>(() => [
+    {
+      accessorKey: 'dataDocumento',
+      header: 'Data',
+      cell: ({ getValue }) => {
+        const date = getValue() as string;
+        if (!date) return '-';
+        return <span className="text-white font-medium">{new Date(date).toLocaleDateString('pt-BR')}</span>;
+      }
+    },
+    {
+      accessorKey: 'tipoDespesa',
+      header: 'Categoria',
+      cell: ({ getValue }) => (
+        <div className="max-w-[280px] truncate font-bold text-white uppercase text-[11px] tracking-tight" title={getValue() as string}>
+          {getValue() as string}
+        </div>
+      )
+    },
+    {
+      accessorKey: 'nomeFornecedor',
+      header: 'Fornecedor',
+      cell: ({ getValue }) => (
+        <div className="max-w-[200px] truncate text-slate-500 text-xs font-medium" title={getValue() as string}>
+          {getValue() as string}
+        </div>
+      )
+    },
+    {
+      accessorKey: 'valorLiquido',
+      header: 'Valor',
+      cell: ({ getValue }) => (
+        <span className="font-mono font-black text-emerald-400">
+          {formatCurrency(getValue() as number)}
+        </span>
+      )
+    },
+    {
+      id: 'documento',
+      header: 'Doc',
+      cell: ({ row }) => {
+        const url = row.original.urlDocumento;
+        if (!url) return null;
+        return (
+          <a href={url} target="_blank" rel="noopener noreferrer" 
+             className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-all inline-flex items-center group/doc" 
+             title="Ver nota fiscal (XML/PDF)">
+            <ExternalLink size={14} className="opacity-50 group-hover/doc:opacity-100 transition-opacity" />
+          </a>
+        );
+      }
+    }
+  ], []);
 
   if (errorSecretarios) {
     console.error('Supabase Error:', secretarioError);
@@ -1066,243 +1136,273 @@ export default function DeputadoDetailPage() {
 
         {/* TAB: RESUMO */}
         {activeTab === 'resumo' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Assessores (informativo) */}
-            <div className="bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/20 rounded-[2rem] p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400">
-                  <Briefcase size={22} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            
+            {/* 1. DISTRIBUIÇÃO DE GASTOS (DESTAQUE TOTAL) */}
+            <div className="md:col-span-2 lg:col-span-3 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 lg:p-10 relative overflow-hidden group/chart h-full min-h-[500px] flex flex-col">
+              <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] group-hover/chart:bg-indigo-500/20 transition-all duration-1000"></div>
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-indigo-500/15 rounded-2xl flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/10">
+                    <DollarSign size={28} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Distribuição de Gastos</h3>
+                    <p className="text-slate-500 text-sm font-medium">Análise proporcional da cota parlamentar em {expenseSelectedYear}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-white font-bold">Secretários Parlamentares</h3>
-                  <p className="text-slate-500 text-xs">Assessores do gabinete</p>
-                </div>
-              </div>
-
-              {loadingSecretarios && (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
-                </div>
-              )}
-
-              {errorSecretarios && (
-                <div className="py-4 text-center text-sm text-red-400">
-                  <p>Erro ao carregar secretários. Tente novamente mais tarde.</p>
-                </div>
-              )}
-
-              {!loadingSecretarios && !errorSecretarios && secretarios && secretarios.length > 0 && (
-                <div className="space-y-2 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
-                  {secretarios.map((sec, i) => (
-                    <div key={`${sec.nome}-${i}`} className="p-4 bg-navy/40 rounded-2xl border border-white/5 space-y-1 hover:border-gold/20 transition-all group/sec relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-2 opacity-5 md:group-hover/sec:opacity-20 transition-opacity">
-                        <Users size={40} />
-                      </div>
-                      <p className="text-white text-sm font-black uppercase truncate">{sec.nome}</p>
-                      <p className="text-slate-500 text-xs font-medium">{sec.cargo}</p>
-                      <div className="flex items-center gap-2 text-xs text-slate-600 mt-2 font-mono">
-                        <span className="flex items-center gap-1"><MapPin size={10} /> {status.siglaUf}</span>
-                        {sec.data_inicio_historico && (
-                          <>
-                            <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
-                            <span>Desde: {new Date(sec.data_inicio_historico).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-
-
-              {!hasSupabaseConfig() && (
-                <div className="py-4 text-center text-sm text-slate-500">
-                  <p>Dados de secretários indisponíveis (Ambiente não configurado).</p>
-                </div>
-              )}
-
-              <div className="p-4 bg-navy/30 rounded-xl border border-white/5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 text-sm">Assessores ativos</span>
-                  <span className="text-white font-black text-lg">{secretarios?.length || 0} de 25</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 text-sm">Gabinete vinculado</span>
-                  <span className="text-slate-300 text-xs font-medium text-right max-w-[160px] truncate">
-                    {secretarios?.[0]?.lotacao || 'Não identificado'}
-                  </span>
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl transition-all hover:border-indigo-500/40 hover:bg-white/10 group/sel">
+                    <Calendar size={16} className="text-indigo-400" />
+                    <select
+                      value={expenseSelectedYear}
+                      onChange={(e) => setExpenseSelectedYear(parseInt(e.target.value))}
+                      className="bg-transparent border-none text-sm font-bold text-white focus:outline-none appearance-none cursor-pointer pr-2"
+                    >
+                      {YEARS.map(y => <option key={`exp-year-${y}`} value={y} className="bg-navy">{y}</option>)}
+                    </select>
+                    <ChevronDown size={14} className="text-slate-500 group-hover/sel:text-white transition-colors" />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-slate-500 text-xs">
-                <Info size={14} className="shrink-0 mt-0.5" />
-                <p>
-                  Os dados de assessores são sincronizados de uma base externa e podem levar alguns minutos para atualizar.
+              <div className="relative z-10 flex-1 flex flex-col justify-center">
+                <ExpensesDonutChart 
+                  data={aggregatedExpenses || []} 
+                  loading={loadingAggregatedExpenses} 
+                />
+              </div>
+            </div>
+
+            {/* 2. EQUIPE DE GABINETE (LATERAL) */}
+            <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 space-y-6 flex flex-col group/equipe">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-purple-500/15 rounded-2xl flex items-center justify-center text-purple-400 border border-purple-500/20">
+                    <Briefcase size={22} />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-black uppercase tracking-tighter text-lg leading-none mb-1">Equipe</h3>
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Assessores ativos</p>
+                  </div>
+                </div>
+                <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
+                  <span className="text-purple-400 font-black text-xs">{secretarios?.length || 0}</span>
+                </div>
+              </div>
+
+              <div className="flex-1 min-h-0">
+                {loadingSecretarios ? (
+                  <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-purple-400 animate-spin" /></div>
+                ) : secretarios && secretarios.length > 0 ? (
+                  <div className="space-y-2.5 overflow-y-auto pr-2 custom-scrollbar max-h-[420px]">
+                    {secretarios.map((sec, i) => (
+                      <div key={`${sec.nome}-${i}`} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-purple-500/30 hover:bg-white/10 transition-all group/item relative overflow-hidden">
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <p className="text-white text-sm font-black uppercase truncate flex-1">{sec.nome}</p>
+                          <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-black tracking-tighter shadow-sm ${
+                            sec.cargo.startsWith('CNE') 
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' 
+                              : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20'
+                          }`}>
+                            {sec.cargo.startsWith('CNE') ? 'CNE' : 'SP'}
+                          </span>
+                        </div>
+                        <p className="text-slate-500 text-[10px] font-bold truncate mb-3">{sec.cargo}</p>
+                        
+                        <div className="flex items-center gap-3">
+                          {sec.remuneracao_bruta && sec.remuneracao_bruta > 0 && (
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/15 rounded-lg border border-emerald-500/20" title={`Líquido Aproximado: ${formatCurrency(sec.remuneracao_liquida || 0)}`}>
+                              <DollarSign size={10} className="text-emerald-400" />
+                              <span className="text-[10px] font-black text-emerald-400">{formatCurrency(sec.remuneracao_bruta || 0)}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1 text-[10px] text-slate-600 font-bold uppercase tracking-tighter">
+                            <MapPin size={10} /> {dep?.ultimoStatus?.siglaUf}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center">
+                    <Users size={40} className="mx-auto text-slate-800 mb-4" />
+                    <p className="text-slate-500 text-sm italic">Nenhum assessor identificado para este gabinete.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-6 border-t border-white/5 flex items-start gap-3 opacity-60">
+                <Info size={14} className="shrink-0 mt-0.5 text-slate-500" />
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic">
+                  Dados sincronizados via Supabase com base na Lotação declarada no Portal da Transparência.
                 </p>
               </div>
             </div>
 
-            {/* Comissões e Órgãos */}
-            <div className="bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-500/20 rounded-[2rem] p-6 space-y-4">
+            {/* 3. PRODUÇÃO LEGISLATIVA (DESTAQUE) */}
+            <div className="md:col-span-2 lg:col-span-2 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 lg:p-10 relative overflow-hidden group/prod flex flex-col h-full">
+              <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-500/5 rounded-full blur-[80px] group-hover/prod:bg-blue-500/10 transition-all duration-700"></div>
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-blue-500/15 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/10">
+                    <FileText size={28} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Produção Legislativa</h3>
+                    <p className="text-slate-500 text-sm font-medium">Histórico acumulado de proposições e atos</p>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 bg-gold/15 border border-gold/20 rounded-[2rem] flex flex-col items-center justify-center shadow-xl shadow-gold/5">
+                  <span className="text-gold/60 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total de Atos</span>
+                  <span className="text-gold text-4xl font-black tracking-tighter leading-none">{proposicaoTotalsLifetime?.total || 0}</span>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[420px] relative z-10">
+                {loadingTotalsLifetime ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 animate-pulse">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="h-14 bg-white/5 rounded-2xl" />)}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
+                    {Object.entries(proposicaoTotalsLifetime?.counts || {})
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([tipo, count]) => {
+                        const nomeCompleto = PROPOSICOES_MAP[tipo] || `Sigla: ${tipo}`;
+                        return (
+                          <div key={tipo} className="group flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-[1.5rem] hover:bg-white/10 hover:border-blue-500/30 transition-all duration-300">
+                            <div className="flex flex-col">
+                              <span className="text-white font-black text-xs uppercase tracking-widest">{tipo}</span>
+                              <span className="text-slate-600 text-[9px] font-bold uppercase truncate max-w-[100px]" title={nomeCompleto}>{nomeCompleto}</span>
+                            </div>
+                            <span className="text-white font-black text-xl tracking-tighter">{count}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 4. COMISSÕES E ÓRGÃOS (LATERAL) */}
+            <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 space-y-6 flex flex-col group/comis h-full">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-emerald-500/15 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/20">
                     <Gavel size={22} />
                   </div>
                   <div>
-                    <h3 className="text-white font-bold">Comissões e Órgãos</h3>
-                    <p className="text-slate-500 text-xs">Participação ativa</p>
+                    <h3 className="text-white font-black uppercase tracking-tighter text-lg leading-none mb-1">Comissões</h3>
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Atuação ativa</p>
                   </div>
                 </div>
-                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-black rounded-full">
-                  {loadingOrgaos ? '...' : orgaos.length}
-                </span>
-              </div>
-
-              <div className="space-y-2 max-h-[280px] overflow-y-auto pr-2">
-                {loadingOrgaos && (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
-                  </div>
-                )}
-                {orgaos.map((orgao) => (
-                  <div key={orgao.idOrgao} className="p-3 bg-navy/30 rounded-xl border border-white/5 space-y-1 hover:border-emerald-500/20 transition-all">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded">{orgao.siglaOrgao}</span>
-                      <span className="text-[10px] text-slate-600 capitalize">{orgao.titulo}</span>
-                    </div>
-                    <p className="text-slate-300 text-xs font-medium leading-tight">{orgao.nomePublicacao || orgao.nomeOrgao}</p>
-                  </div>
-                ))}
-                {!loadingOrgaos && orgaos.length === 0 && (
-                  <p className="text-slate-600 text-sm text-center py-4">Nenhuma participação ativa no momento.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Produção Legislativa - POSIÇÃO DE DESTAQUE */}
-            <div className="lg:col-span-2 bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-500/20 rounded-[2rem] p-6 lg:p-8 space-y-6 relative overflow-hidden group/prod">
-              <div className="absolute -top-12 -right-12 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl group-hover/prod:bg-indigo-500/10 transition-all"></div>
-              
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400">
-                    <FileText size={22} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">Produção Legislativa</h3>
-                    <p className="text-slate-500 text-xs">Detalhamento completo de atos e proposições</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 px-6 py-3 bg-gold/10 border border-gold/20 rounded-2xl shadow-lg">
-                  <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Acumulado</span>
-                  <span className="text-gold text-3xl font-black leading-none">{proposicaoTotalsLifetime?.total || 0}</span>
+                <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                  <span className="text-emerald-400 font-black text-xs">{orgaos.length}</span>
                 </div>
               </div>
 
-              {loadingTotalsLifetime ? (
-                <div className="flex flex-wrap gap-2 animate-pulse">
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="h-10 w-28 bg-white/5 rounded-xl" />)}
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2 relative z-10">
-                  {Object.entries(proposicaoTotalsLifetime?.counts || {})
-                    .sort(([, a], [, b]) => b - a)
-                    .map(([tipo, count]) => {
-                      const nomeCompleto = PROPOSICOES_MAP[tipo] || `Sigla: ${tipo}`;
-                      return (
-                        <div key={tipo} className="group flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-default">
-                          <div className="flex items-center gap-2">
-                            <span className="text-white font-black text-xs uppercase tracking-widest opacity-60 group-hover:opacity-100">{tipo}</span>
-                            <div className="p-1 bg-white/5 text-slate-500 rounded-full cursor-help hover:bg-indigo-500/20 hover:text-indigo-400 transition-all" title={nomeCompleto}>
-                              <Info size={10} />
-                            </div>
-                          </div>
-                          <span className="w-px h-4 bg-white/10"></span>
-                          <span className="text-white font-black text-base">{count}</span>
+              <div className="flex-1 min-h-0">
+                {loadingOrgaos ? (
+                  <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-emerald-400 animate-spin" /></div>
+                ) : orgaos.length > 0 ? (
+                  <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar max-h-[420px]">
+                    {orgaos.map((orgao) => (
+                      <div key={orgao.idOrgao} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20">{orgao.siglaOrgao}</span>
+                          <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">{orgao.titulo}</span>
                         </div>
-                      );
-                    })}
-                </div>
-              )}
+                        <p className="text-slate-200 text-xs font-bold leading-snug">{orgao.nomePublicacao || orgao.nomeOrgao}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-slate-600 italic text-sm">Nenhuma participação ativa identificada.</div>
+                )}
+              </div>
             </div>
 
-            {/* Biografia e Ocupações */}
-            <div className="lg:col-span-2 bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/20 rounded-[2rem] p-6 lg:p-8 space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400">
-                  <Briefcase size={22} />
+            {/* 5. BIOGRAFIA E HISTÓRICO (DESTAQUE) */}
+            <div className="md:col-span-2 lg:col-span-2 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 lg:p-10 relative overflow-hidden group/bio h-full">
+              <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-rose-500/5 rounded-full blur-[80px]"></div>
+              
+              <div className="flex items-center gap-4 mb-10">
+                <div className="w-14 h-14 bg-rose-500/15 rounded-2xl flex items-center justify-center text-rose-400 border border-rose-500/20 shadow-lg shadow-rose-500/10">
+                  <GraduationCap size={28} />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-xl uppercase tracking-tighter">Biografia & Histórico Profissional</h3>
-                  <p className="text-slate-500 text-xs">Atividades declaradas pelo parlamentar</p>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Biografia & Trajetória</h3>
+                  <p className="text-slate-500 text-sm font-medium">Histórico profissional e acadêmico declarado</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 {/* Ocupações */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                    <Building2 size={12} /> Ocupações Anteriores
-                  </h4>
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
+                    Ocupações Anteriores
+                  </div>
+                  <div className="space-y-3 max-h-[350px] overflow-y-auto pr-3 custom-scrollbar">
                     {loadingOcupacoes ? (
-                      <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-400" /></div>
+                      <Loader2 className="w-6 h-6 animate-spin text-rose-400 mx-auto" />
                     ) : ocupacoesData && ocupacoesData.length > 0 ? (
                       ocupacoesData.map((oc, i) => (
-                        <div key={`ocupacao-${oc.titulo}-${i}`} className="p-4 bg-navy/40 rounded-2xl border border-white/5 space-y-2 group/oc hover:border-blue-500/20 transition-all">
-                          <p className="text-white text-sm font-bold leading-tight group-hover/oc:text-blue-400 transition-colors uppercase">{oc.titulo}</p>
-                          <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 font-medium">
-                            <span className="flex items-center gap-1"><Building2 size={10} /> {oc.entidade}</span>
-                            <span className="flex items-center gap-1"><MapPin size={10} /> {oc.entidadeUF || oc.entidadePais}</span>
-                            <span className="px-2 py-0.5 bg-white/5 rounded text-slate-400">
-                              {oc.anoInicio} {oc.anoFim ? `- ${oc.anoFim}` : '(Atual)'}
-                            </span>
+                        <div key={`ocupacao-${oc.titulo}-${i}`} className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-rose-500/20 transition-all space-y-3">
+                          <p className="text-white text-sm font-black uppercase tracking-tight leading-tight">{oc.titulo}</p>
+                          <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
+                            <span className="flex items-center gap-1.5"><Building2 size={12} className="text-rose-400" /> {oc.entidade}</span>
+                            <span className="flex items-center gap-1.5"><MapPin size={12} /> {oc.entidadeUF || oc.entidadePais}</span>
+                          </div>
+                          <div className="inline-block px-3 py-1 bg-white/5 rounded-lg text-slate-400 text-[10px] font-black uppercase tracking-tighter">
+                            {oc.anoInicio} → {oc.anoFim ? oc.anoFim : 'Atual'}
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-slate-600 text-sm italic">Nenhuma ocupação anterior registrada.</p>
+                      <p className="text-slate-600 text-sm italic py-4">Nenhuma ocupação declarada no histórico.</p>
                     )}
                   </div>
                 </div>
 
-                {/* Profissões / Escolaridade */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                    <GraduationCap size={12} /> Formação e Profissões
-                  </h4>
-                  <div className="p-5 bg-white/5 rounded-2xl border border-white/5 space-y-6">
-                    <div className="space-y-2">
-                      <span className="text-[9px] text-slate-600 font-black uppercase">Grau de Instrução</span>
-                      <p className="text-white text-sm font-bold">{dep.escolaridade}</p>
+                {/* Formação */}
+                <div className="space-y-8">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                      Escolaridade
                     </div>
-
-                    <div className="space-y-3">
-                      <span className="text-[9px] text-slate-600 font-black uppercase">Profissões Declaradas</span>
-                      <div className="flex flex-wrap gap-2">
-                        {profissoesData && profissoesData.length > 0 ? (
-                          profissoesData.map((pr) => (
-                            <span key={pr.id} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 text-[10px] font-bold rounded-lg border border-blue-500/20">
-                              {pr.titulo}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-slate-600 text-[10px] italic">Sem profissões específicas listadas.</span>
-                        )}
-                      </div>
+                    <div className="p-6 bg-white/5 rounded-[1.5rem] border border-white/5 border-l-rose-500/40 border-l-4">
+                      <p className="text-white text-lg font-black tracking-tight">{dep.escolaridade}</p>
                     </div>
+                  </div>
 
-                    <div className="pt-4 border-t border-white/5 flex items-start gap-2 text-[10px] text-slate-600 italic">
-                      <Info size={12} className="shrink-0 mt-0.5" />
-                      <p>Os dados biográficos são fornecidos pelo próprio parlamentar no ato da posse.</p>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      Profissões Declaradas
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {profissoesData && profissoesData.length > 0 ? (
+                        profissoesData.map((pr) => (
+                          <span key={pr.id} className="px-4 py-2 bg-blue-500/10 text-blue-400 text-[11px] font-black uppercase tracking-tight rounded-2xl border border-blue-500/20 hover:bg-blue-500/20 transition-all cursor-default">
+                            {pr.titulo}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-slate-600 text-xs italic">Sem informações específicas.</span>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
           </div>
         )}
 
@@ -1310,78 +1410,129 @@ export default function DeputadoDetailPage() {
         {activeTab === 'despesas' && (
           <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                <Receipt className="text-gold" size={24} />
-                Despesas da Cota Parlamentar
-              </h2>
               <div className="flex items-center gap-3">
-                <select value={year} onChange={(e) => { setYear(parseInt(e.target.value)); setDespesaPage(1); }}
-                  className="bg-navy border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-gold/50 appearance-none cursor-pointer">
-                  {YEARS.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-                {fetchingDesp && <Loader2 className="w-5 h-5 text-gold animate-spin" />}
+                <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center text-gold">
+                  <Receipt size={22} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white tracking-tight uppercase">Despesas da Cota</h2>
+                  <p className="text-slate-500 text-xs italic">Cota para Exercício da Atividade Parlamentar (CEAP)</p>
+                </div>
+              </div>
+
+              {(totalAnualCota > 0 || loadingTabAggregatedExpenses) && (
+                <div className="px-5 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-4 shadow-lg shadow-emerald-500/5 transition-all hover:bg-emerald-500/15 min-w-[200px]">
+                  <div className="flex-1">
+                    <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest block mb-1">Total Anual ({despesaYear})</span>
+                    {loadingTabAggregatedExpenses ? (
+                      <div className="h-7 w-32 bg-emerald-500/10 animate-pulse rounded-lg"></div>
+                    ) : (
+                      <span className="text-2xl font-black text-emerald-400 leading-none">{formatCurrency(totalAnualCota)}</span>
+                    )}
+                  </div>
+                  {!loadingTabAggregatedExpenses && (
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                      <DollarSign size={16} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* FILTROS DE DESPESAS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative overflow-hidden group/filters">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover/filters:bg-gold/10 transition-all"></div>
+              
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-gold shadow-inner">
+                  <Calendar size={18} />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                    Ano Fiscal
+                  </label>
+                  <select
+                    value={despesaYear}
+                    onChange={(e) => { setDespesaYear(parseInt(e.target.value)); setDespesaPage(1); }}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all hover:bg-white/10 cursor-pointer appearance-none"
+                  >
+                    {YEARS.map(y => <option key={`exp-y-${y}`} value={y} className="bg-navy">{y}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-blue-400 shadow-inner">
+                  <History size={18} />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                    Mês de Referência
+                  </label>
+                  <select
+                    value={despesaMonth}
+                    onChange={(e) => { setDespesaMonth(e.target.value); setDespesaPage(1); }}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all hover:bg-white/10 cursor-pointer appearance-none"
+                  >
+                    {MONTHS.map(m => <option key={`exp-m-${m.value}`} value={m.value} className="bg-navy">{m.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end">
+                {fetchingDesp && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold text-xs font-bold rounded-xl border border-gold/20 animate-pulse">
+                    <Loader2 size={14} className="animate-spin" />
+                    SINCROZINANDO DADOS...
+                  </div>
+                )}
               </div>
             </div>
 
-            {totalDespesas > 0 && (
-              <div className="p-6 bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20 rounded-2xl flex items-center justify-between">
-                <span className="text-slate-400 text-sm font-medium">Total nesta página ({year})</span>
-                <span className="text-2xl font-black text-emerald-400">{formatCurrency(totalDespesas)}</span>
+            {loadingDesp ? (
+              <TableSkeleton rows={10} />
+            ) : despesas.length > 0 ? (
+              <div className="bg-slate-card/60 backdrop-blur-sm border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
+                <DataTable 
+                  columns={despesaColumns} 
+                  data={despesas} 
+                  getRowId={(row) => String(row.codDocumento)}
+                />
+                
+                <div className="p-6 border-t border-white/5">
+                  <Pagination 
+                    page={despesaPage} 
+                    totalPaginas={totalPaginasDespesas}
+                    hasNext={hasNextDesp} 
+                    itensPerPage={despesaItens} 
+                    onItensPerPageChange={(n) => { setDespesaItens(n); setDespesaPage(1); }}
+                    onPageChange={(p) => { 
+                      setDespesaPage(p); 
+                      const element = document.getElementById('deputado-content-tabs');
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.scrollTo({ top: 500, behavior: 'smooth' });
+                      }
+                    }} 
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="py-20 text-center bg-slate-card/20 rounded-[3rem] border border-dashed border-white/10 group hover:border-gold/20 transition-all">
+                <Receipt className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:scale-110 group-hover:text-gold/20 transition-all duration-500" />
+                <p className="text-white font-black text-xl uppercase tracking-tighter">Sem registros para este período</p>
+                <p className="text-slate-600 text-sm mt-2 max-w-xs mx-auto">
+                  A Câmara ainda não processou despesas para o mês de {MONTHS.find(m => m.value === despesaMonth)?.label} de {despesaYear}.
+                </p>
+                <button 
+                  onClick={() => { setDespesaMonth('all'); setDespesaPage(1); }}
+                  className="mt-6 px-6 py-2.5 bg-white/5 text-slate-400 text-xs font-bold rounded-xl border border-white/10 hover:border-gold/30 hover:text-gold transition-all"
+                >
+                  VER TODO O ANO DE {despesaYear}
+                </button>
               </div>
             )}
-
-            {loadingDesp && <TableSkeleton rows={10} />}
-
-            {!loadingDesp && despesas.length > 0 && (
-              <div className={`space-y-3 transition-opacity duration-300 ${fetchingDesp ? 'opacity-60' : ''}`}>
-                {despesas.map((desp, idx) => (
-                  <div key={`${desp.codDocumento}-${idx}`}
-                    className="flex flex-col md:flex-row md:items-center gap-4 p-5 bg-slate-card border border-white/5 rounded-2xl hover:border-emerald-500/20 transition-all group">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 shrink-0 group-hover:scale-110 transition-transform">
-                        <DollarSign size={22} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-white font-bold text-sm">{desp.tipoDespesa}</p>
-                        <p className="text-slate-500 text-xs truncate">{desp.nomeFornecedor}</p>
-                        <div className="flex items-center gap-3 text-slate-600 text-[10px] mt-1">
-                          <span className="flex items-center gap-1">
-                            <Calendar size={10} />
-                            {new Date(desp.dataDocumento).toLocaleDateString('pt-BR')}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <FileText size={10} />
-                            {desp.tipoDocumento}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 shrink-0">
-                      <span className="text-emerald-400 font-black text-lg font-mono">{formatCurrency(desp.valorLiquido)}</span>
-                      {desp.urlDocumento && (
-                        <a href={desp.urlDocumento} target="_blank" rel="noopener noreferrer"
-                          className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-all" title="Ver nota fiscal">
-                          <ExternalLink size={16} />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!loadingDesp && despesas.length === 0 && (
-              <div className="py-16 text-center bg-slate-card/10 rounded-3xl border border-dashed border-white/10">
-                <Receipt className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-white font-bold">Nenhuma despesa registrada em {year}</p>
-                <p className="text-slate-500 text-sm mt-1">Tente selecionar outro ano.</p>
-              </div>
-            )}
-
-            <Pagination page={despesaPage} hasNext={hasNextDesp} itensPerPage={15} onPageChange={(p) => { setDespesaPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
           </section>
         )}
 

@@ -73,6 +73,11 @@ export interface Despesa {
   valorGlosa: number;
 }
 
+export interface AggregateExpense {
+  name: string;
+  value: number;
+}
+
 export interface Partido {
   id: number;
   sigla: string;
@@ -297,9 +302,17 @@ export async function fetchDeputadoDespesas(
     links: Array<{ rel: string; href: string }>;
   }>(url);
 
+  const lastLink = data.links?.find(l => l.rel === 'last');
+  let totalPaginas = undefined;
+  if (lastLink) {
+    const match = lastLink.href.match(/[?&]pagina=(\d+)/);
+    if (match) totalPaginas = parseInt(match[1]);
+  }
+
   return {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
+    totalPaginas,
   };
 }
 
@@ -360,6 +373,32 @@ export async function fetchProposicoes(params: {
     hasNext: data.links?.some(l => l.rel === 'next') || false,
     totalPaginas,
   };
+}
+
+export async function fetchDeputadoDespesasAggregation(id: number, year: number): Promise<AggregateExpense[]> {
+  const firstPage = await fetchDeputadoDespesas(id, { ano: year, itens: 100, pagina: 1 });
+  
+  if (firstPage.items.length === 0) return [];
+  
+  const allDespesas = [...firstPage.items];
+  const totalPaginas = firstPage.totalPaginas || 1;
+  
+  if (totalPaginas > 1) {
+    const pages = Array.from({ length: totalPaginas - 1 }, (_, i) => i + 2);
+    const results = await Promise.all(
+      pages.map(p => fetchDeputadoDespesas(id, { ano: year, itens: 100, pagina: p }))
+    );
+    results.forEach(res => allDespesas.push(...res.items));
+  }
+  
+  const map: Record<string, number> = {};
+  allDespesas.forEach(d => {
+    map[d.tipoDespesa] = (map[d.tipoDespesa] || 0) + d.valorLiquido;
+  });
+  
+  return Object.entries(map)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
 }
 
 export async function fetchProposicaoById(id: number): Promise<Proposicao | null> {
