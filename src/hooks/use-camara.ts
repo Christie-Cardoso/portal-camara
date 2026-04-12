@@ -137,6 +137,9 @@ interface Secretario {
   lotacao: string;
   grupo: string | null;
   data_inicio_historico: string | null;
+  remuneracao_bruta?: number;
+  remuneracao_liquida?: number;
+  mes_referencia?: string;
   updated_at: string;
 }
 

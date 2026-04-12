@@ -63,7 +63,7 @@ async function syncSecretarios() {
             // Cargo mapping: "Secretário Parlamentar" starts with "SP" in the data
             const cargoValue = String(row['cargo'] || '').replace(/^"|"$/g, '');
             
-            if (cargoValue.trim().startsWith('SP')) {
+            if (cargoValue.trim().startsWith('SP') || cargoValue.trim().startsWith('CNE')) {
               const pontoValue = String(row['ponto'] || '').replace(/^"|"$/g, '');
               const nomeValue = String(row['nome'] || '').replace(/^"|"$/g, '');
               const lotacaoValue = String(row['lotacao'] || '').replace(/^"|"$/g, '');
