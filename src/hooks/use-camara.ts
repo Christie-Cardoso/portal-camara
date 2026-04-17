@@ -22,6 +22,7 @@ import {
   fetchProposicaoAutores,
   fetchProposicaoTotals,
   fetchDeputadoDespesasAggregation,
+  fetchDeputadoEmendas,
 } from '@/lib/camara';
 import { supabase, hasSupabaseConfig } from '@/lib/supabase';
 
@@ -250,5 +251,14 @@ export function useDeputadoDespesasAggregation(id: number, year: number) {
     queryFn: () => fetchDeputadoDespesasAggregation(id, year),
     enabled: !!id && !!year,
     staleTime: 15 * 60 * 1000, // 15 minutes
+  });
+}
+
+export function useDeputadoEmendas(id: number, year: number) {
+  return useQuery({
+    queryKey: ['deputados', 'emendas', id, year],
+    queryFn: () => fetchDeputadoEmendas(id, year),
+    enabled: !!id && !!year,
+    staleTime: 60 * 60 * 1000, // 1 hour
   });
 }
