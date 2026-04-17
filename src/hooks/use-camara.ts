@@ -23,6 +23,7 @@ import {
   fetchProposicaoTotals,
   fetchDeputadoDespesasAggregation,
   fetchDeputadoEmendas,
+  fetchBeneficios,
 } from '@/lib/camara';
 import { supabase, hasSupabaseConfig } from '@/lib/supabase';
 
@@ -260,5 +261,14 @@ export function useDeputadoEmendas(id: number, year: number) {
     queryFn: () => fetchDeputadoEmendas(id, year),
     enabled: !!id && !!year,
     staleTime: 60 * 60 * 1000, // 1 hour
+  });
+}
+
+export function useBeneficios(id: number) {
+  return useQuery({
+    queryKey: ['deputados', 'beneficios', id],
+    queryFn: () => fetchBeneficios(id),
+    enabled: !!id,
+    staleTime: 6 * 60 * 60 * 1000, // 6 hours
   });
 }

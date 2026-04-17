@@ -20,7 +20,8 @@ import {
   useProposicaoAutores,
   useProposicaoTotals,
   useDeputadoDespesasAggregation,
-  useDeputadoEmendas
+  useDeputadoEmendas,
+  useBeneficios
 } from '@/hooks/use-camara';
 import { PROPOSICOES_MAP } from '@/lib/constants';
 import { ExpensesDonutChart } from '@/components/ExpensesDonutChart';
@@ -31,7 +32,7 @@ import { SpinnerFullPage, TableSkeleton } from '@/components/LoadingState';
 import {
   ArrowLeft, Calendar, MapPin, GraduationCap, Phone, Mail, PiggyBank,
   Building2, ExternalLink, Receipt, FileText, DollarSign, Loader2,
-  Users, Gavel, Info, Briefcase, ChevronDown,
+  Users, Gavel, Info, Briefcase, ChevronDown, Home, Globe,
   ChevronUp,
   History,
   AlertCircle,
@@ -47,7 +48,9 @@ import {
   ThumbsUp, ThumbsDown, Minus, Search, CheckCircle2, XCircle, LayoutDashboard,
   FlagOff, AlertTriangle,
   Flag,
-  Vote
+  Vote,
+  Plane,
+  ShieldCheck
 } from 'lucide-react';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
@@ -598,6 +601,9 @@ export default function DeputadoDetailPage() {
   const [activeTab, setActiveTab] = useState('resumo');
   const [despesaYear, setDespesaYear] = useState(CURRENT_YEAR);
   const [despesaMonth, setDespesaMonth] = useState('all');
+
+  // Novos benefícios (Scraping + Supabase)
+  const { data: beneficios, isLoading: loadingBeneficios } = useBeneficios(deputadoId);
   const [despesaItens, setDespesaItens] = useState(15);
   const [despesaPage, setDespesaPage] = useState(1);
   const [votacaoPage, setVotacaoPage] = useState(1);
@@ -617,7 +623,7 @@ export default function DeputadoDetailPage() {
   const [discursoPage, setDiscursoPage] = useState(1);
   const [discursoItens, setDiscursoItens] = useState(10);
   const [expandedDiscurso, setExpandedDiscurso] = useState<number | null>(null);
-  
+
   const [emendaYear, setEmendaYear] = useState(CURRENT_YEAR);
 
   // Estado para o ano no gráfico de despesas (Resumo)
@@ -744,7 +750,7 @@ export default function DeputadoDetailPage() {
 
   const { data: aggregatedExpenses, isLoading: loadingAggregatedExpenses } = useDeputadoDespesasAggregation(deputadoId, expenseSelectedYear);
   const { data: tabAggregatedExpenses, isLoading: loadingTabAggregatedExpenses } = useDeputadoDespesasAggregation(deputadoId, despesaYear);
-  
+
   const totalAnualCota = useMemo(() => {
     return tabAggregatedExpenses?.reduce((acc, curr) => acc + curr.value, 0) || 0;
   }, [tabAggregatedExpenses]);
@@ -920,7 +926,7 @@ export default function DeputadoDetailPage() {
       }
     }
   ], []);
-  
+
   const despesaColumns = useMemo<ColumnDef<Despesa>[]>(() => [
     {
       accessorKey: 'dataDocumento',
@@ -965,9 +971,9 @@ export default function DeputadoDetailPage() {
         const url = row.original.urlDocumento;
         if (!url) return null;
         return (
-          <a href={url} target="_blank" rel="noopener noreferrer" 
-             className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-all inline-flex items-center group/doc" 
-             title="Ver nota fiscal (XML/PDF)">
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-all inline-flex items-center group/doc"
+            title="Ver nota fiscal (XML/PDF)">
             <ExternalLink size={14} className="opacity-50 group-hover/doc:opacity-100 transition-opacity" />
           </a>
         );
@@ -1240,11 +1246,11 @@ export default function DeputadoDetailPage() {
         {/* TAB: RESUMO */}
         {activeTab === 'resumo' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            
+
             {/* 1. DISTRIBUIÇÃO DE GASTOS (DESTAQUE TOTAL) */}
             <div className="md:col-span-2 lg:col-span-3 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 lg:p-10 relative overflow-hidden group/chart h-full min-h-[500px] flex flex-col">
               <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] group-hover/chart:bg-indigo-500/20 transition-all duration-1000"></div>
-              
+
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 mb-8">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-indigo-500/15 rounded-2xl flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/10">
@@ -1255,7 +1261,7 @@ export default function DeputadoDetailPage() {
                     <p className="text-slate-500 text-sm font-medium">Análise proporcional da cota parlamentar em {expenseSelectedYear}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl transition-all hover:border-indigo-500/40 hover:bg-white/10 group/sel">
                     <Calendar size={16} className="text-indigo-400" />
@@ -1272,9 +1278,9 @@ export default function DeputadoDetailPage() {
               </div>
 
               <div className="relative z-10 flex-1 flex flex-col justify-center">
-                <ExpensesDonutChart 
-                  data={aggregatedExpenses || []} 
-                  loading={loadingAggregatedExpenses} 
+                <ExpensesDonutChart
+                  data={aggregatedExpenses || []}
+                  loading={loadingAggregatedExpenses}
                 />
               </div>
             </div>
@@ -1305,16 +1311,15 @@ export default function DeputadoDetailPage() {
                       <div key={`${sec.nome}-${i}`} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-purple-500/30 hover:bg-white/10 transition-all group/item relative overflow-hidden">
                         <div className="flex justify-between items-start gap-2 mb-1">
                           <p className="text-white text-sm font-black uppercase truncate flex-1">{sec.nome}</p>
-                          <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-black tracking-tighter shadow-sm ${
-                            sec.cargo.startsWith('CNE') 
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' 
-                              : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20'
-                          }`}>
+                          <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-black tracking-tighter shadow-sm ${sec.cargo.startsWith('CNE')
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
+                            : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20'
+                            }`}>
                             {sec.cargo.startsWith('CNE') ? 'CNE' : 'SP'}
                           </span>
                         </div>
                         <p className="text-slate-500 text-[10px] font-bold truncate mb-3">{sec.cargo}</p>
-                        
+
                         <div className="flex items-center gap-3">
                           {sec.remuneracao_bruta && sec.remuneracao_bruta > 0 && (
                             <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/15 rounded-lg border border-emerald-500/20" title={`Líquido Aproximado: ${formatCurrency(sec.remuneracao_liquida || 0)}`}>
@@ -1345,10 +1350,116 @@ export default function DeputadoDetailPage() {
               </div>
             </div>
 
+            {/* 2b. RECURSOS E BENEFÍCIOS (NOVO) */}
+            <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 space-y-6 flex flex-col group/beneficios">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gold/15 rounded-2xl flex items-center justify-center text-gold border border-gold/20">
+                  <ShieldCheck size={22} />
+                </div>
+                <div>
+                  <h3 className="text-white font-black uppercase tracking-tighter text-lg leading-none mb-1">Benefícios</h3>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Recursos pagos pelo contribuinte</p>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-3">
+                {loadingBeneficios ? (
+                  <div className="space-y-3 animate-pulse">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-14 bg-white/5 rounded-2xl" />)}
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-gold/30 transition-all flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gold/10 rounded-lg text-gold"><DollarSign size={14} /></div>
+                        <span className="text-xs font-bold text-slate-400 uppercase">Salário Bruto</span>
+                      </div>
+                      <span className="text-white font-black text-sm">{beneficios?.salario_bruto || '—'}</span>
+                    </div>
+
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-blue-400/30 transition-all space-y-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><Home size={14} /></div>
+                        <div className="flex items-center gap-2 group/tip relative">
+                          <span className="text-xs font-bold text-slate-400 uppercase">Moradia</span>
+                          <HelpCircle size={12} className="text-slate-600 hover:text-blue-400 transition-colors cursor-help" />
+                          <div className="absolute bottom-full left-0 mb-2 w-72 p-4 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-[10px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-50 transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
+                            <p className="font-bold text-white mb-2 uppercase text-[9px] tracking-wider border-b border-white/5 pb-1">Sobre Moradia e Imóvel</p>
+                            <span className="block mb-2 text-blue-300">
+                              <strong className="text-white">Imóvel Funcional:</strong> A Câmara possui 447 apartamentos disponíveis. Com 513 deputados, há mais parlamentares do que apartamentos.
+                            </span>
+                            <span className="block text-slate-400">
+                              <strong className="text-white">Auxílio-moradia:</strong> Valor de R$ 4.253,00 para quem não ocupa imóvel. Pode ser pago no contracheque ou reembolso. O limite total com cota parlamentar é de R$ 8.401,80.
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1 pl-10">
+                        <span className={`text-[11px] font-black uppercase px-2 py-0.5 rounded-full w-fit ${beneficios?.imovel_funcional?.includes('Faz uso') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-slate-500 border border-white/5'}`}>
+                          {beneficios?.imovel_funcional || 'Não informado'}
+                        </span>
+                        <span className={`text-[11px] font-black uppercase px-2 py-0.5 rounded-full w-fit ${beneficios?.auxilio_moradia?.includes('Não recebe') ? 'bg-white/5 text-slate-500 border border-white/5' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                          {beneficios?.auxilio_moradia || 'Não informado'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-purple-400/30 transition-all flex items-center justify-between group/passport">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400"><Globe size={14} /></div>
+                        <div className="flex items-center gap-2 group/tip relative">
+                          <span className="text-xs font-bold text-slate-400 uppercase">Passaporte</span>
+                          <HelpCircle size={12} className="text-slate-600 hover:text-purple-400 transition-colors cursor-help" />
+                          <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl text-[10px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-50 transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
+                            Deputados têm direito a passaportes diplomáticos para si e para seus dependentes, dispensando vistos em alguns países.
+                          </div>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${beneficios?.passaporte_diplomatico?.includes('Possui') ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-white/5 text-slate-500 border border-white/5'}`}>
+                        {beneficios?.passaporte_diplomatico || 'Não informado'}
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-emerald-400/30 transition-all flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400"><Users size={14} /></div>
+                        <span className="text-xs font-bold text-slate-400 uppercase">Gabinete</span>
+                      </div>
+                      <span className="text-white font-bold text-[10px] uppercase text-right max-w-[120px] leading-tight">
+                        {beneficios?.pessoal_gabinete || 'Não informado'}
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-rose-400/30 transition-all flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-rose-500/10 rounded-lg text-rose-400"><Plane size={14} /></div>
+                        <div className="flex items-center gap-2 group/tip relative">
+                          <span className="text-xs font-bold text-slate-400 uppercase">Missões Oficiais</span>
+                          <HelpCircle size={12} className="text-slate-600 hover:text-rose-400 transition-colors cursor-help" />
+                          <div className="absolute bottom-full right-0 mb-2 w-72 p-4 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-[10px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-50 transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
+                            Diárias para missões oficiais: R$ 842,00 (nacionais), US$ 391,00 (América do Sul) e US$ 428,00 (outros países).
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-white font-black text-sm">
+                        {beneficios?.viagens_missao || '0'}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-white/5 opacity-50">
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic text-center">
+                  Informações extraídas do Portal da Transparência.
+                </p>
+              </div>
+            </div>
+
             {/* 3. PRODUÇÃO LEGISLATIVA (DESTAQUE) */}
             <div className="md:col-span-2 lg:col-span-2 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 lg:p-10 relative overflow-hidden group/prod flex flex-col h-full">
               <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-500/5 rounded-full blur-[80px] group-hover/prod:bg-blue-500/10 transition-all duration-700"></div>
-              
+
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 mb-8">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-blue-500/15 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/10">
@@ -1433,7 +1544,7 @@ export default function DeputadoDetailPage() {
             {/* 5. BIOGRAFIA E HISTÓRICO (DESTAQUE) */}
             <div className="md:col-span-2 lg:col-span-2 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 lg:p-10 relative overflow-hidden group/bio h-full">
               <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-rose-500/5 rounded-full blur-[80px]"></div>
-              
+
               <div className="flex items-center gap-4 mb-10">
                 <div className="w-14 h-14 bg-rose-500/15 rounded-2xl flex items-center justify-center text-rose-400 border border-rose-500/20 shadow-lg shadow-rose-500/10">
                   <GraduationCap size={28} />
@@ -1545,7 +1656,7 @@ export default function DeputadoDetailPage() {
             {/* FILTROS DE DESPESAS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative overflow-hidden group/filters">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover/filters:bg-gold/10 transition-all"></div>
-              
+
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-gold shadow-inner">
                   <Calendar size={18} />
@@ -1596,28 +1707,28 @@ export default function DeputadoDetailPage() {
               <TableSkeleton rows={10} />
             ) : despesas.length > 0 ? (
               <div className="bg-slate-card/60 backdrop-blur-sm border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
-                <DataTable 
-                  columns={despesaColumns} 
-                  data={despesas} 
+                <DataTable
+                  columns={despesaColumns}
+                  data={despesas}
                   getRowId={(row) => String(row.codDocumento)}
                 />
-                
+
                 <div className="p-6 border-t border-white/5">
-                  <Pagination 
-                    page={despesaPage} 
+                  <Pagination
+                    page={despesaPage}
                     totalPaginas={totalPaginasDespesas}
-                    hasNext={hasNextDesp} 
-                    itensPerPage={despesaItens} 
+                    hasNext={hasNextDesp}
+                    itensPerPage={despesaItens}
                     onItensPerPageChange={(n) => { setDespesaItens(n); setDespesaPage(1); }}
-                    onPageChange={(p) => { 
-                      setDespesaPage(p); 
+                    onPageChange={(p) => {
+                      setDespesaPage(p);
                       const element = document.getElementById('deputado-content-tabs');
                       if (element) {
                         element.scrollIntoView({ behavior: 'smooth' });
                       } else {
                         window.scrollTo({ top: 500, behavior: 'smooth' });
                       }
-                    }} 
+                    }}
                   />
                 </div>
               </div>
@@ -1628,7 +1739,7 @@ export default function DeputadoDetailPage() {
                 <p className="text-slate-600 text-sm mt-2 max-w-xs mx-auto">
                   A Câmara ainda não processou despesas para o mês de {MONTHS.find(m => m.value === despesaMonth)?.label} de {despesaYear}.
                 </p>
-                <button 
+                <button
                   onClick={() => { setDespesaMonth('all'); setDespesaPage(1); }}
                   className="mt-6 px-6 py-2.5 bg-white/5 text-slate-400 text-xs font-bold rounded-xl border border-white/10 hover:border-gold/30 hover:text-gold transition-all"
                 >
@@ -2167,9 +2278,9 @@ export default function DeputadoDetailPage() {
               <TableSkeleton rows={8} />
             ) : emendas.length > 0 ? (
               <div className="bg-slate-card border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                <DataTable 
-                  columns={emendaColumns} 
-                  data={emendas} 
+                <DataTable
+                  columns={emendaColumns}
+                  data={emendas}
                   getRowId={(row) => `${row.orgaoConcedente}-${row.objetivo}-${row.valorPago}`}
                   getRowCanExpand={() => true}
                   renderSubComponent={({ row }) => <EmendaDetailExpansion row={row} />}
@@ -2190,7 +2301,7 @@ export default function DeputadoDetailPage() {
               <div className="space-y-1">
                 <h4 className="text-white font-bold text-sm">Sobre as Emendas Orçamentárias</h4>
                 <p className="text-slate-400 text-xs leading-relaxed">
-                  As emendas parlamentares são recursos do Orçamento Geral da União cuja aplicação é indicada por deputados e senadores. 
+                  As emendas parlamentares são recursos do Orçamento Geral da União cuja aplicação é indicada por deputados e senadores.
                   Os valores exibidos nesta aba refletem a execução financeira oficial (autorização, reserva e pagamento efetivo) de acordo com o Portal da Transparência da Câmara dos Deputados.
                 </p>
               </div>
@@ -2199,6 +2310,6 @@ export default function DeputadoDetailPage() {
         )}
       </div>
 
-    </div>
+    </div >
   );
 }
