@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sync:secretarios": "node --max-old-space-size=4096 scripts/sync-secretarios.mjs"
+    "sync:secretarios": "node --max-old-space-size=4096 scripts/sync-secretarios.mjs",
+    "sync:emendas": "node scripts/sync-emendas.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",

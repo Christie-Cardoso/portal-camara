@@ -19,7 +19,8 @@ import {
   useProposicao,
   useProposicaoAutores,
   useProposicaoTotals,
-  useDeputadoDespesasAggregation
+  useDeputadoDespesasAggregation,
+  useDeputadoEmendas
 } from '@/hooks/use-camara';
 import { PROPOSICOES_MAP } from '@/lib/constants';
 import { ExpensesDonutChart } from '@/components/ExpensesDonutChart';
@@ -28,7 +29,7 @@ import { ErrorState } from '@/components/ErrorState';
 import { Pagination } from '@/components/Pagination';
 import { SpinnerFullPage, TableSkeleton } from '@/components/LoadingState';
 import {
-  ArrowLeft, Calendar, MapPin, GraduationCap, Phone, Mail,
+  ArrowLeft, Calendar, MapPin, GraduationCap, Phone, Mail, PiggyBank,
   Building2, ExternalLink, Receipt, FileText, DollarSign, Loader2,
   Users, Gavel, Info, Briefcase, ChevronDown,
   ChevronUp,
@@ -53,7 +54,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import type { Votacao, VotoDeputado, Proposicao, Despesa } from '@/lib/camara';
+import type { Votacao, VotoDeputado, Proposicao, Despesa, EmendaOrcamentaria } from '@/lib/camara';
 
 function formatCurrency(v: number): string {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -616,6 +617,8 @@ export default function DeputadoDetailPage() {
   const [discursoPage, setDiscursoPage] = useState(1);
   const [discursoItens, setDiscursoItens] = useState(10);
   const [expandedDiscurso, setExpandedDiscurso] = useState<number | null>(null);
+  
+  const [emendaYear, setEmendaYear] = useState(CURRENT_YEAR);
 
   // Estado para o ano no gráfico de despesas (Resumo)
   const [expenseSelectedYear, setExpenseSelectedYear] = useState(new Date().getFullYear());
@@ -708,6 +711,8 @@ export default function DeputadoDetailPage() {
     dataFim: proposicaoDataFim,
     ano: proposicaoSelectedYear,
   });
+  const { data: emendasData, isLoading: loadingEmendas } = useDeputadoEmendas(deputadoId, emendaYear);
+  const emendas = emendasData || [];
 
   // Totais: um para a aba Resumo (histórico completo)
   const { data: proposicaoTotalsLifetime, isLoading: loadingTotalsLifetime } = useProposicaoTotals(deputadoId);
@@ -970,6 +975,97 @@ export default function DeputadoDetailPage() {
     }
   ], []);
 
+  function EmendaDetailExpansion({ row }: { row: any }) {
+    const emenda = row.original;
+    return (
+      <div className="p-6 bg-navy/40 animate-in fade-in duration-500">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+            <p className="text-xs font-black uppercase text-emerald-400 tracking-widest">Objeto / Descrição da Emenda</p>
+          </div>
+          <div className="bg-white/5 p-6 rounded-2xl border border-white/5 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/20"></div>
+            <p className="text-white text-base leading-relaxed italic">
+              {emenda.objetivo || "Descrição não disponível para este registro."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-4 pt-2">
+            <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+              <span className="text-[10px] text-slate-500 font-black uppercase block">Ano Orçamentário</span>
+              <span className="text-white text-sm font-bold">{emenda.ano}</span>
+            </div>
+            <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+              <span className="text-[10px] text-slate-500 font-black uppercase block">Beneficiário / Localidade</span>
+              <span className="text-white text-sm font-bold">{emenda.localidade || "Nacional / Diversas"}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const emendaColumns = useMemo<ColumnDef<EmendaOrcamentaria>[]>(() => [
+    {
+      id: 'expander',
+      header: () => null,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center">
+          {row.getIsExpanded() ? (
+            <div className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg"><ChevronUp size={14} /></div>
+          ) : (
+            <div className="p-1.5 bg-white/5 text-slate-500 rounded-lg group-hover:text-slate-300 transition-colors"><ChevronDown size={14} /></div>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'orgaoConcedente',
+      header: 'Órgão Concedente',
+      cell: ({ getValue }) => (
+        <div className="max-w-[350px] font-black text-white text-sm uppercase tracking-tight group-hover:text-emerald-400 transition-colors">
+          {getValue() as string}
+        </div>
+      )
+    },
+    {
+      accessorKey: 'objetivo',
+      header: 'Objeto (Resumo)',
+      cell: ({ getValue }) => (
+        <div className="max-w-[300px] truncate text-slate-500 text-xs italic font-medium">
+          {getValue() as string}
+        </div>
+      )
+    },
+    {
+      accessorKey: 'valorAutorizado',
+      header: 'Autorizado',
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs text-slate-400">
+          {formatCurrency(getValue() as number)}
+        </span>
+      )
+    },
+    {
+      accessorKey: 'valorEmpenhado',
+      header: 'Empenhado',
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs text-blue-400/80">
+          {formatCurrency(getValue() as number)}
+        </span>
+      )
+    },
+    {
+      accessorKey: 'valorPago',
+      header: 'Pago',
+      cell: ({ getValue }) => (
+        <span className="font-mono text-sm font-black text-emerald-400">
+          {formatCurrency(getValue() as number)}
+        </span>
+      )
+    }
+  ], []);
+
   if (errorSecretarios) {
     console.error('Supabase Error:', secretarioError);
   }
@@ -1126,6 +1222,13 @@ export default function DeputadoDetailPage() {
         >
           <History size={18} />
           Trajetória & Bio
+        </button>
+        <button
+          onClick={() => setActiveTab('emendas')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'emendas' ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' : 'text-slate-400 hover:bg-white/5'}`}
+        >
+          <PiggyBank size={18} />
+          Emendas
         </button>
       </div>
 
@@ -2009,6 +2112,88 @@ export default function DeputadoDetailPage() {
               <p className="text-slate-400 text-sm leading-relaxed">
                 A linha do tempo acima reflete os registros oficiais de mandatos, suplências e mudanças de partido conforme informados à Câmara dos Deputados. Eventos mais antigos podem ter menor detalhamento.
               </p>
+            </div>
+          </section>
+        )}
+
+        {/* TAB: EMENDAS */}
+        {activeTab === 'emendas' && (
+          <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-emerald-500/15 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
+                  <PiggyBank size={28} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Emendas Orçamentárias</h2>
+                  <p className="text-slate-500 text-sm font-medium">Recursos destinados e execução financeira (Dados: Portal da Transparência)</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-4 py-2 bg-navy/40 border border-white/10 rounded-2xl transition-all hover:border-emerald-500/40 hover:bg-white/5 group/sel">
+                  <Calendar size={16} className="text-emerald-400" />
+                  <select
+                    value={emendaYear}
+                    onChange={(e) => setEmendaYear(parseInt(e.target.value))}
+                    className="bg-transparent border-none text-sm font-bold text-white focus:outline-none appearance-none cursor-pointer pr-2"
+                  >
+                    {YEARS.map(y => <option key={`emenda-y-${y}`} value={y} className="bg-navy">{y}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="text-slate-500 group-hover/sel:text-white transition-colors" />
+                </div>
+              </div>
+            </div>
+
+            {/* Resumo da Execução */}
+            {!loadingEmendas && emendas.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2">
+                  <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Total Autorizado</span>
+                  <p className="text-2xl font-black text-white">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorAutorizado, 0))}</p>
+                </div>
+                <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2">
+                  <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Total Empenhado</span>
+                  <p className="text-2xl font-black text-blue-400">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorEmpenhado, 0))}</p>
+                </div>
+                <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 space-y-2">
+                  <span className="text-[10px] text-emerald-400/60 font-black uppercase tracking-widest">Total Pago</span>
+                  <p className="text-2xl font-black text-emerald-400">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorPago, 0))}</p>
+                </div>
+              </div>
+            )}
+
+            {loadingEmendas ? (
+              <TableSkeleton rows={8} />
+            ) : emendas.length > 0 ? (
+              <div className="bg-slate-card border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                <DataTable 
+                  columns={emendaColumns} 
+                  data={emendas} 
+                  getRowId={(row) => `${row.orgaoConcedente}-${row.objetivo}-${row.valorPago}`}
+                  getRowCanExpand={() => true}
+                  renderSubComponent={({ row }) => <EmendaDetailExpansion row={row} />}
+                />
+              </div>
+            ) : (
+              <div className="py-24 text-center bg-navy/20 rounded-[3rem] border border-dashed border-white/10 group">
+                <PiggyBank className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:scale-110 group-hover:text-emerald-500/20 transition-all duration-500" />
+                <p className="text-white font-black text-xl uppercase tracking-tighter">Nenhuma emenda encontrada para {emendaYear}</p>
+                <p className="text-slate-600 text-sm mt-3 max-w-sm mx-auto leading-relaxed">
+                  Os dados podem demorar a ser processados pelo Portal da Transparência da Câmara para o ano atual.
+                </p>
+              </div>
+            )}
+
+            <div className="p-8 bg-blue-500/5 rounded-[2rem] border border-blue-500/10 flex items-start gap-4">
+              <Info size={18} className="text-blue-400 shrink-0 mt-1" />
+              <div className="space-y-1">
+                <h4 className="text-white font-bold text-sm">Sobre as Emendas Orçamentárias</h4>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  As emendas parlamentares são recursos do Orçamento Geral da União cuja aplicação é indicada por deputados e senadores. 
+                  Os valores exibidos nesta aba refletem a execução financeira oficial (autorização, reserva e pagamento efetivo) de acordo com o Portal da Transparência da Câmara dos Deputados.
+                </p>
+              </div>
             </div>
           </section>
         )}

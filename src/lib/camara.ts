@@ -188,6 +188,18 @@ export interface PaginatedResponse<T> {
   totalPaginas?: number;
 }
 
+export interface EmendaOrcamentaria {
+  numero: string;
+  tipo: string;
+  ano: number;
+  orgaoConcedente: string;
+  valorAutorizado: number;
+  valorEmpenhado: number;
+  valorPago: number;
+  objetivo?: string;
+  localidade?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Generic fetcher
 // ---------------------------------------------------------------------------
@@ -732,6 +744,24 @@ export async function fetchDeputadoProfissoes(id: number): Promise<Profissao[]> 
     const data = await camaraFetch<{ dados: Profissao[] }>(url);
     return data.dados || [];
   } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// EMENDAS ORÇAMENTÁRIAS
+// ---------------------------------------------------------------------------
+
+export async function fetchDeputadoEmendas(id: number, ano: number): Promise<EmendaOrcamentaria[]> {
+  // Chamamos nossa API interna (Server Route) para contornar problemas de CORS e realizar o scraping no servidor.
+  const url = `/api/emendas?id=${id}&ano=${ano}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    return await response.json();
+  } catch (err) {
+    console.error("Erro ao buscar emendas:", err);
     return [];
   }
 }
