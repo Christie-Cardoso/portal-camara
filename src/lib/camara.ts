@@ -765,3 +765,32 @@ export async function fetchDeputadoEmendas(id: number, ano: number): Promise<Eme
     return [];
   }
 }
+
+// ---------------------------------------------------------------------------
+// BENEFÍCIOS PARLAMENTARES
+// ---------------------------------------------------------------------------
+
+export interface Beneficio {
+  deputado_id: number;
+  salario_bruto: string;
+  imovel_funcional: string;
+  auxilio_moradia: string;
+  passaporte_diplomatico: string;
+  viagens_missao: string;
+  pessoal_gabinete: string;
+  updated_at: string;
+}
+
+export async function fetchBeneficios(id: number): Promise<Beneficio | null> {
+  // Chamamos nossa API interna (Server Route)
+  const url = `/api/beneficios?id=${id}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (err) {
+    console.error("Erro ao buscar beneficios:", err);
+    return null;
+  }
+}
