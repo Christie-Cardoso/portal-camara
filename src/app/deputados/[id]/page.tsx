@@ -625,6 +625,8 @@ export default function DeputadoDetailPage() {
   const [expandedDiscurso, setExpandedDiscurso] = useState<number | null>(null);
 
   const [emendaYear, setEmendaYear] = useState(CURRENT_YEAR);
+  const [emendaPage, setEmendaPage] = useState(1);
+  const [emendaItens, setEmendaItens] = useState(10);
 
   // Estado para o ano no gráfico de despesas (Resumo)
   const [expenseSelectedYear, setExpenseSelectedYear] = useState(new Date().getFullYear());
@@ -739,6 +741,15 @@ export default function DeputadoDetailPage() {
   const discursos = discursosData?.items || [];
   const totalPaginasDiscursos = discursosData?.totalPaginas;
   const hasNextDiscursos = discursosData?.hasNext || false;
+
+  // Emendas Pagination (Client Side)
+  const totalEmendas = emendas.length;
+  const totalPaginasEmendas = Math.ceil(totalEmendas / emendaItens);
+  const currentEmendas = useMemo(() => {
+    const start = (emendaPage - 1) * emendaItens;
+    return emendas.slice(start, start + emendaItens);
+  }, [emendas, emendaPage, emendaItens]);
+  const hasNextEmendas = emendaPage < totalPaginasEmendas;
 
   const searchName = dep?.ultimoStatus.nome;
   const {
@@ -1029,7 +1040,7 @@ export default function DeputadoDetailPage() {
       accessorKey: 'orgaoConcedente',
       header: 'Órgão Concedente',
       cell: ({ getValue }) => (
-        <div className="max-w-[350px] font-black text-white text-sm uppercase tracking-tight group-hover:text-emerald-400 transition-colors">
+        <div className="max-w-[180px] font-black text-white text-[10px] uppercase tracking-tight group-hover:text-emerald-400 transition-colors truncate" title={getValue() as string}>
           {getValue() as string}
         </div>
       )
@@ -1038,14 +1049,22 @@ export default function DeputadoDetailPage() {
       accessorKey: 'objetivo',
       header: 'Objeto (Resumo)',
       cell: ({ getValue }) => (
-        <div className="max-w-[300px] truncate text-slate-500 text-xs italic font-medium">
+        <div className="max-w-[150px] truncate text-slate-500 text-[9px] italic font-medium" title={getValue() as string}>
           {getValue() as string}
         </div>
       )
     },
     {
       accessorKey: 'valorAutorizado',
-      header: 'Autorizado',
+      header: () => (
+        <div className="flex items-center gap-1.5 group/tip relative cursor-help">
+          <span>Autorizado</span>
+          <HelpCircle size={10} className="text-slate-500 group-hover/tip:text-emerald-400 transition-colors" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 p-3 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl text-[10px] leading-relaxed text-slate-300 font-medium invisible group-hover/tip:visible z-[110] transition-all duration-300 opacity-0 group-hover/tip:opacity-100 -translate-y-2 group-hover/tip:translate-y-0 text-center">
+            A emenda foi aprovada pelo Congresso Nacional e passou a integrar a Lei Orçamentária Anual.
+          </div>
+        </div>
+      ),
       cell: ({ getValue }) => (
         <span className="font-mono text-xs text-slate-400">
           {formatCurrency(getValue() as number)}
@@ -1054,7 +1073,15 @@ export default function DeputadoDetailPage() {
     },
     {
       accessorKey: 'valorEmpenhado',
-      header: 'Empenhado',
+      header: () => (
+        <div className="flex items-center gap-1.5 group/tip relative cursor-help">
+          <span>Empenhado</span>
+          <HelpCircle size={10} className="text-slate-500 group-hover/tip:text-blue-400 transition-colors" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 p-3 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl text-[10px] leading-relaxed text-slate-300 font-medium invisible group-hover/tip:visible z-[110] transition-all duration-300 opacity-0 group-hover/tip:opacity-100 -translate-y-2 group-hover/tip:translate-y-0 text-center">
+            A verba foi reservada pelo Poder Executivo para o gasto destinado pela emenda.
+          </div>
+        </div>
+      ),
       cell: ({ getValue }) => (
         <span className="font-mono text-xs text-blue-400/80">
           {formatCurrency(getValue() as number)}
@@ -1063,7 +1090,15 @@ export default function DeputadoDetailPage() {
     },
     {
       accessorKey: 'valorPago',
-      header: 'Pago',
+      header: () => (
+        <div className="flex items-center gap-1.5 group/tip relative cursor-help">
+          <span>Pago</span>
+          <HelpCircle size={10} className="text-slate-500 group-hover/tip:text-emerald-400 transition-colors" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 p-3 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl text-[10px] leading-relaxed text-slate-300 font-medium invisible group-hover/tip:visible z-[110] transition-all duration-300 opacity-0 group-hover/tip:opacity-100 -translate-y-2 group-hover/tip:translate-y-0 text-center">
+            O valor da emenda foi transferido para o estado ou município de destino.
+          </div>
+        </div>
+      ),
       cell: ({ getValue }) => (
         <span className="font-mono text-sm font-black text-emerald-400">
           {formatCurrency(getValue() as number)}
@@ -2229,7 +2264,7 @@ export default function DeputadoDetailPage() {
 
         {/* TAB: EMENDAS */}
         {activeTab === 'emendas' && (
-          <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <section id="emendas-section" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-emerald-500/15 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
@@ -2241,35 +2276,66 @@ export default function DeputadoDetailPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-2 bg-navy/40 border border-white/10 rounded-2xl transition-all hover:border-emerald-500/40 hover:bg-white/5 group/sel">
-                  <Calendar size={16} className="text-emerald-400" />
+              <div className="flex items-center gap-3">
+                <a
+                  href={`https://www.camara.leg.br/deputados/${params.id}/todas-emendas?texto=&ano=${emendaYear}&situacao=`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs font-black hover:bg-emerald-500/20 transition-all shadow-lg active:scale-95 group/link uppercase tracking-tighter"
+                  title="Ver dados oficiais no Portal da Câmara"
+                >
+                  <ExternalLink size={14} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                  Link Oficial
+                </a>
+              </div>
+            </div>
+
+            {/* FILTROS DE EMENDAS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative overflow-hidden group/em_filters">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover/em_filters:bg-emerald-500/10 transition-all"></div>
+
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-emerald-400 shadow-inner">
+                  <Calendar size={18} />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                    Ano Fiscal
+                  </label>
                   <select
                     value={emendaYear}
-                    onChange={(e) => setEmendaYear(parseInt(e.target.value))}
-                    className="bg-transparent border-none text-sm font-bold text-white focus:outline-none appearance-none cursor-pointer pr-2"
+                    onChange={(e) => { setEmendaYear(parseInt(e.target.value)); setEmendaPage(1); }}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all hover:bg-white/10 cursor-pointer appearance-none"
                   >
                     {YEARS.map(y => <option key={`emenda-y-${y}`} value={y} className="bg-navy">{y}</option>)}
                   </select>
-                  <ChevronDown size={14} className="text-slate-500 group-hover/sel:text-white transition-colors" />
                 </div>
+              </div>
+
+              <div className="md:col-span-2 flex items-center justify-end">
+                {loadingEmendas && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/20 animate-pulse">
+                    <Loader2 size={14} className="animate-spin" />
+                    SINCROZINANDO DADOS...
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Resumo da Execução */}
             {!loadingEmendas && emendas.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2">
+                <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2 group/total hover:border-white/10 transition-all">
                   <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Total Autorizado</span>
-                  <p className="text-2xl font-black text-white">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorAutorizado, 0))}</p>
+                  <p className="text-2xl font-black text-white group-hover:scale-105 transition-transform origin-left">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorAutorizado, 0))}</p>
                 </div>
-                <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2">
+                <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2 group/total hover:border-blue-500/10 transition-all">
                   <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Total Empenhado</span>
-                  <p className="text-2xl font-black text-blue-400">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorEmpenhado, 0))}</p>
+                  <p className="text-2xl font-black text-blue-400 group-hover:scale-105 transition-transform origin-left">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorEmpenhado, 0))}</p>
                 </div>
-                <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 space-y-2">
+                <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 space-y-2 group/total hover:bg-emerald-500/15 transition-all">
                   <span className="text-[10px] text-emerald-400/60 font-black uppercase tracking-widest">Total Pago</span>
-                  <p className="text-2xl font-black text-emerald-400">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorPago, 0))}</p>
+                  <p className="text-2xl font-black text-emerald-400 group-hover:scale-105 transition-transform origin-left">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorPago, 0))}</p>
                 </div>
               </div>
             )}
@@ -2277,14 +2343,33 @@ export default function DeputadoDetailPage() {
             {loadingEmendas ? (
               <TableSkeleton rows={8} />
             ) : emendas.length > 0 ? (
-              <div className="bg-slate-card border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                <DataTable
-                  columns={emendaColumns}
-                  data={emendas}
-                  getRowId={(row) => `${row.orgaoConcedente}-${row.objetivo}-${row.valorPago}`}
-                  getRowCanExpand={() => true}
-                  renderSubComponent={({ row }) => <EmendaDetailExpansion row={row} />}
-                />
+              <div className="space-y-6">
+                <div className="bg-slate-card/60 backdrop-blur-sm border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10">
+                  <DataTable
+                    columns={emendaColumns}
+                    data={currentEmendas}
+                    getRowId={(row) => `${row.orgaoConcedente}-${row.objetivo}-${row.valorPago}`}
+                    getRowCanExpand={() => true}
+                    renderSubComponent={({ row }) => <EmendaDetailExpansion row={row} />}
+                  />
+
+                  <div className="p-6 border-t border-white/5">
+                    <Pagination
+                      page={emendaPage}
+                      totalPaginas={totalPaginasEmendas}
+                      hasNext={hasNextEmendas}
+                      itensPerPage={emendaItens}
+                      onItensPerPageChange={(n) => { setEmendaItens(n); setEmendaPage(1); }}
+                      onPageChange={(p) => {
+                        setEmendaPage(p);
+                        const element = document.getElementById('emendas-section');
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="py-24 text-center bg-navy/20 rounded-[3rem] border border-dashed border-white/10 group">
