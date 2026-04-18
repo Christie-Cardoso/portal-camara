@@ -264,10 +264,10 @@ export function useDeputadoEmendas(id: number, year: number) {
   });
 }
 
-export function useBeneficios(id: number) {
+export function useBeneficios(id: number, ano?: number) {
   return useQuery({
-    queryKey: ['deputados', 'beneficios', id],
-    queryFn: () => fetchBeneficios(id),
+    queryKey: ['deputados', 'beneficios', id, ano],
+    queryFn: () => fetchBeneficios(id, ano),
     enabled: !!id,
     staleTime: 6 * 60 * 60 * 1000, // 6 hours
   });
