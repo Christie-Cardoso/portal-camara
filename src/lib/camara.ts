@@ -770,20 +770,30 @@ export async function fetchDeputadoEmendas(id: number, ano: number): Promise<Eme
 // BENEFÍCIOS PARLAMENTARES
 // ---------------------------------------------------------------------------
 
+export interface AuxilioMoradiaMensal {
+  mes: string;
+  valor: string;
+}
+
 export interface Beneficio {
   deputado_id: number;
+  ano: number;
   salario_bruto: string;
   imovel_funcional: string;
   auxilio_moradia: string;
+  auxilio_moradia_mensal?: AuxilioMoradiaMensal[];
   passaporte_diplomatico: string;
   viagens_missao: string;
   pessoal_gabinete: string;
   updated_at: string;
 }
 
-export async function fetchBeneficios(id: number): Promise<Beneficio | null> {
+export async function fetchBeneficios(id: number, ano?: number): Promise<Beneficio | null> {
   // Chamamos nossa API interna (Server Route)
-  const url = `/api/beneficios?id=${id}`;
+  const query = new URLSearchParams({ id: id.toString() });
+  if (ano) query.append('ano', ano.toString());
+  
+  const url = `/api/beneficios?${query.toString()}`;
 
   try {
     const response = await fetch(url);

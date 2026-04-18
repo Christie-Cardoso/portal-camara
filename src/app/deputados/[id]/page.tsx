@@ -602,8 +602,13 @@ export default function DeputadoDetailPage() {
   const [despesaYear, setDespesaYear] = useState(CURRENT_YEAR);
   const [despesaMonth, setDespesaMonth] = useState('all');
 
+  // Modal de Auxílio-moradia
+  const [showMoradiaModal, setShowMoradiaModal] = useState(false);
+  const [beneficiosYear, setBeneficiosYear] = useState(new Date().getFullYear());
+
   // Novos benefícios (Scraping + Supabase)
-  const { data: beneficios, isLoading: loadingBeneficios } = useBeneficios(deputadoId);
+  const { data: beneficiosCard, isLoading: isLoadingBeneficiosCard } = useBeneficios(deputadoId, CURRENT_YEAR);
+  const { data: beneficiosModal, isLoading: isLoadingBeneficiosModal } = useBeneficios(deputadoId, beneficiosYear);
   const [despesaItens, setDespesaItens] = useState(15);
   const [despesaPage, setDespesaPage] = useState(1);
   const [votacaoPage, setVotacaoPage] = useState(1);
@@ -627,6 +632,8 @@ export default function DeputadoDetailPage() {
   const [emendaYear, setEmendaYear] = useState(CURRENT_YEAR);
   const [emendaPage, setEmendaPage] = useState(1);
   const [emendaItens, setEmendaItens] = useState(10);
+
+
 
   // Estado para o ano no gráfico de despesas (Resumo)
   const [expenseSelectedYear, setExpenseSelectedYear] = useState(new Date().getFullYear());
@@ -1385,57 +1392,91 @@ export default function DeputadoDetailPage() {
               </div>
             </div>
 
-            {/* 2b. RECURSOS E BENEFÍCIOS (NOVO) */}
+            {/* 2b. RECURSOS E BENEFÍCIOS (Cota de 2026) */}
             <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 space-y-6 flex flex-col group/beneficios">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gold/15 rounded-2xl flex items-center justify-center text-gold border border-gold/20">
-                  <ShieldCheck size={22} />
+              <div className="flex items-center gap-4 mb-10">
+                <div className="w-14 h-14 bg-indigo-500/15 rounded-3xl flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+                  <Briefcase size={28} />
                 </div>
                 <div>
-                  <h3 className="text-white font-black uppercase tracking-tighter text-lg leading-none mb-1">Benefícios</h3>
-                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Recursos pagos pelo contribuinte</p>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Benefícios</h3>
+                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest opacity-60">Recursos do Mandato • 2026</p>
                 </div>
               </div>
 
               <div className="flex-1 space-y-3">
-                {loadingBeneficios ? (
+                {isLoadingBeneficiosCard ? (
                   <div className="space-y-3 animate-pulse">
                     {[1, 2, 3, 4].map(i => <div key={i} className="h-14 bg-white/5 rounded-2xl" />)}
                   </div>
                 ) : (
-                  <>
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-gold/30 transition-all flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gold/10 rounded-lg text-gold"><DollarSign size={14} /></div>
-                        <span className="text-xs font-bold text-slate-400 uppercase">Salário Bruto</span>
+                  <div className="space-y-4">
+                    <div className="p-5 bg-white/[0.03] rounded-3xl border border-white/5 hover:border-indigo-500/20 transition-all flex items-center justify-between group/item">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 group-hover/item:scale-110 transition-transform"><DollarSign size={18} /></div>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Salário Bruto</span>
                       </div>
-                      <span className="text-white font-black text-sm">{beneficios?.salario_bruto || '—'}</span>
+                      <span className="text-white font-black text-base">{beneficiosCard?.salario_bruto || '—'}</span>
                     </div>
 
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-blue-400/30 transition-all space-y-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><Home size={14} /></div>
-                        <div className="flex items-center gap-2 group/tip relative">
-                          <span className="text-xs font-bold text-slate-400 uppercase">Moradia</span>
-                          <HelpCircle size={12} className="text-slate-600 hover:text-blue-400 transition-colors cursor-help" />
-                          <div className="absolute bottom-full left-0 mb-2 w-72 p-4 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-[10px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-50 transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
-                            <p className="font-bold text-white mb-2 uppercase text-[9px] tracking-wider border-b border-white/5 pb-1">Sobre Moradia e Imóvel</p>
-                            <span className="block mb-2 text-blue-300">
-                              <strong className="text-white">Imóvel Funcional:</strong> A Câmara possui 447 apartamentos disponíveis. Com 513 deputados, há mais parlamentares do que apartamentos.
-                            </span>
-                            <span className="block text-slate-400">
-                              <strong className="text-white">Auxílio-moradia:</strong> Valor de R$ 4.253,00 para quem não ocupa imóvel. Pode ser pago no contracheque ou reembolso. O limite total com cota parlamentar é de R$ 8.401,80.
-                            </span>
+                    <div className="p-5 bg-white/[0.03] rounded-3xl border border-white/5 hover:border-blue-500/20 transition-all space-y-5 group/item">
+                      <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 group-hover/item:scale-110 transition-transform"><Home size={18} /></div>
+                          <div className="flex items-center gap-2 group/tip relative">
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Moradia</span>
+                            <HelpCircle size={12} className="text-slate-600 hover:text-blue-400 transition-colors cursor-help" />
+                            <div className="absolute bottom-full left-0 mb-3 w-72 p-5 bg-slate-900/98 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl text-[10px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-50 transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
+                              <p className="font-black text-white mb-3 uppercase text-[9px] tracking-[0.2em] border-b border-white/10 pb-2">Regras Oficiais</p>
+                              <span className="block mb-3 text-blue-300 font-bold opacity-80">
+                                <strong className="text-white">Imóvel Funcional:</strong> Uso de um dos 447 apartamentos funcionais em Brasília.
+                              </span>
+                              <span className="block text-slate-400 font-medium">
+                                <strong className="text-white italic">Auxílio-moradia:</strong> Cota de R$ 4.253,00 para quem não ocupa imóvel oficial. Limitado ao valor do aluguel/hotel.
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-1 pl-10">
-                        <span className={`text-[11px] font-black uppercase px-2 py-0.5 rounded-full w-fit ${beneficios?.imovel_funcional?.includes('Faz uso') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-slate-500 border border-white/5'}`}>
-                          {beneficios?.imovel_funcional || 'Não informado'}
-                        </span>
-                        <span className={`text-[11px] font-black uppercase px-2 py-0.5 rounded-full w-fit ${beneficios?.auxilio_moradia?.includes('Não recebe') ? 'bg-white/5 text-slate-500 border border-white/5' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
-                          {beneficios?.auxilio_moradia || 'Não informado'}
-                        </span>
+
+                      <div className="space-y-4">
+                        {/* Linha 1: Imóvel Funcional */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Imóvel funcional</span>
+                          <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg ${beneficiosCard?.imovel_funcional?.includes('Faz uso') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-slate-500 border border-white/5 opacity-60'}`}>
+                            {beneficiosCard?.imovel_funcional || 'Não informado'}
+                          </span>
+                        </div>
+
+                        {/* Linha 2: Auxílio-moradia */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Auxílio-moradia</span>
+                          <div className="flex flex-col items-end">
+                            <button 
+                              onClick={() => beneficiosCard?.auxilio_moradia_mensal && setShowMoradiaModal(true)}
+                              className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg flex items-center gap-2 transition-all relative overflow-hidden group/btn
+                                ${beneficiosCard?.auxilio_moradia?.includes('Não recebe') 
+                                  ? 'bg-white/5 text-slate-500 border border-white/5 opacity-60' 
+                                  : 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/5'}
+                                ${beneficiosCard?.auxilio_moradia_mensal 
+                                  ? 'cursor-pointer hover:bg-blue-500/20 active:scale-95' 
+                                  : 'cursor-default'}`}>
+                              
+                              {beneficiosCard?.auxilio_moradia_mensal && (
+                                <span className="absolute inset-0 bg-blue-500/10 animate-pulse pointer-events-none"></span>
+                              )}
+                              
+                              {beneficiosCard?.auxilio_moradia || 'Não informado'}
+                              {beneficiosCard?.auxilio_moradia_mensal && <Info size={12} className="opacity-60 group-hover/btn:scale-125 transition-transform" />}
+                            </button>
+                            
+                            {beneficiosCard?.auxilio_moradia_mensal && (
+                              <span className="text-[7px] font-black text-blue-500/50 uppercase tracking-widest mt-1.5 animate-pulse">
+                                Ver Histórico Mensal
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -1450,8 +1491,8 @@ export default function DeputadoDetailPage() {
                           </div>
                         </div>
                       </div>
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${beneficios?.passaporte_diplomatico?.includes('Possui') ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-white/5 text-slate-500 border border-white/5'}`}>
-                        {beneficios?.passaporte_diplomatico || 'Não informado'}
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${beneficiosCard?.passaporte_diplomatico?.includes('Possui') ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-white/5 text-slate-500 border border-white/5'}`}>
+                        {beneficiosCard?.passaporte_diplomatico || 'Não informado'}
                       </span>
                     </div>
 
@@ -1461,7 +1502,7 @@ export default function DeputadoDetailPage() {
                         <span className="text-xs font-bold text-slate-400 uppercase">Gabinete</span>
                       </div>
                       <span className="text-white font-bold text-[10px] uppercase text-right max-w-[120px] leading-tight">
-                        {beneficios?.pessoal_gabinete || 'Não informado'}
+                        {beneficiosCard?.pessoal_gabinete || 'Não informado'}
                       </span>
                     </div>
 
@@ -1477,10 +1518,10 @@ export default function DeputadoDetailPage() {
                         </div>
                       </div>
                       <span className="text-white font-black text-sm">
-                        {beneficios?.viagens_missao || '0'}
+                        {beneficiosCard?.viagens_missao || '0'}
                       </span>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
 
@@ -2394,6 +2435,140 @@ export default function DeputadoDetailPage() {
           </section>
         )}
       </div>
+
+      {showMoradiaModal && beneficiosCard?.auxilio_moradia_mensal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/90 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-slate-card border border-white/10 rounded-[3rem] w-full max-w-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 flex flex-col md:flex-row">
+
+            {/* Lado Esquerdo: Info Regulamentada */}
+            <div className="md:w-5/12 p-10 bg-gradient-to-br from-indigo-500/10 to-blue-500/5 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none">
+                <Home size={200} />
+              </div>
+
+              <div className="relative z-10 space-y-6">
+                <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/30">
+                  <Home size={28} />
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">Regras do Benefício</h3>
+                  <div className="h-1 w-12 bg-blue-500 rounded-full"></div>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-slate-400 text-xs font-bold leading-relaxed text-justify">
+                    Os deputados federais têm direito a receber auxílio-moradia de <span className="text-white">R$ 4.253,00</span> quando não ocupam um dos 447 apartamentos funcionais que a Câmara tem em Brasília.
+                  </p>
+
+                  <p className="text-slate-400 text-xs font-bold leading-relaxed text-justify">
+                    O auxílio pode ser pago diretamente no contracheque ou por reembolso, mediante recibo de aluguel ou hotel.
+                  </p>
+
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-2">
+                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Limite de Complementação</p>
+                    <p className="text-xs text-blue-400 font-black">R$ 4.148,80 (via Cota)</p>
+                  </div>
+
+                  <p className="text-[10px] text-indigo-400/80 font-black uppercase italic leading-tight">
+                    * Aqui estão listados apenas os valores brutos do auxílio-moradia.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Lado Direito: Tabela de Valores */}
+            <div className="md:w-7/12 p-10 flex flex-col bg-slate-card/50 backdrop-blur-lg">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tighter">Detalhamento</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <select
+                        value={beneficiosYear}
+                        onChange={(e) => setBeneficiosYear(Number(e.target.value))}
+                        className="appearance-none bg-white/10 border border-white/10 rounded-xl px-4 py-1.5 pr-10 text-[10px] font-black uppercase text-blue-400 tracking-widest cursor-pointer hover:bg-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-95"
+                      >
+                        {[2026, 2025, 2024, 2023].map((y) => (
+                          <option key={y} value={y} className="bg-navy text-white font-bold">{y}</option>
+                        ))}
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400/60">
+                        <ChevronDown size={14} />
+                      </div>
+                    </div>
+                    <Link 
+                      href={`https://www.camara.leg.br/deputados/${deputadoId}/auxilio-moradia?ano=${beneficiosYear}`}
+                      target="_blank"
+                      className="p-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl text-indigo-400 transition-all group/link"
+                      title="Ver Fonte Oficial (Câmara)"
+                    >
+                      <ExternalLink size={14} className="group-hover/link:rotate-12 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowMoradiaModal(false)}
+                  className="p-3 hover:bg-white/10 rounded-2xl transition-all group shadow-inner"
+                >
+                  <XCircle size={24} className="text-slate-500 group-hover:text-red-400 transition-colors" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[380px] min-h-[350px]">
+                {isLoadingBeneficiosModal ? (
+                   <div className="flex flex-col items-center justify-center h-full gap-4 opacity-40">
+                      <Loader2 size={32} className="animate-spin text-blue-500" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Sincronizando Histórico...</p>
+                   </div>
+                ) : (
+                  <table className="w-full text-left border-separate border-spacing-y-2">
+                    <thead>
+                      <tr>
+                        <th className="text-[10px] text-slate-500 font-black uppercase tracking-widest pb-2 px-4">Período</th>
+                        <th className="text-[10px] text-slate-500 font-black uppercase tracking-widest pb-2 px-4 text-right">Valor Bruto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {beneficiosModal?.auxilio_moradia_mensal ? (
+                        beneficiosModal.auxilio_moradia_mensal.map((item, idx) => (
+                          <tr key={idx} className="bg-white/2 border border-white/5 hover:bg-white/5 transition-all group">
+                            <td className="py-4 px-4 rounded-l-2xl text-[11px] font-black text-slate-300 uppercase group-hover:text-blue-400 transition-colors border-l border-t border-b border-white/5">
+                              {item.mes}
+                            </td>
+                            <td className="py-4 px-4 rounded-r-2xl text-[11px] font-black text-white text-right font-mono border-r border-t border-b border-white/5">
+                              {item.valor}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={2} className="py-20 text-center">
+                             <div className="flex flex-col items-center gap-3 opacity-30">
+                               <AlertTriangle size={32} />
+                               <p className="text-[10px] font-black uppercase">Sem lançamentos oficiais para {beneficiosYear}</p>
+                             </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )} 
+              </div>
+
+              <div className="mt-8">
+                <button
+                  onClick={() => setShowMoradiaModal(false)}
+                  className="w-full py-4 bg-indigo-500 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-indigo-600 transition-all active:scale-95 shadow-xl shadow-indigo-500/20"
+                >
+                  Fechar Detalhes
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div >
   );
