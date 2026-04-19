@@ -544,16 +544,16 @@ function ProposicaoDetailExpansion({ row }: { row: any }) {
                 <ArrowRight size={14} className="text-slate-600 group-hover/link:text-gold transition-colors" />
               </a>
 
-              <a href={`https://dadosabertos.camara.leg.br/api/v2/proposicoes/${propFull.id}`}
+              <a href={`https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=${propFull.id}`}
                 target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 hover:border-blue-400/30 transition-all group/link">
+                className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 hover:border-indigo-400/30 transition-all group/link">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
-                    <Search size={16} />
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                    <LayoutDashboard size={16} />
                   </div>
-                  <span className="text-sm font-bold text-white">Dados Brutos (API)</span>
+                  <span className="text-sm font-bold text-white">Página do Projeto (Câmara)</span>
                 </div>
-                <ArrowRight size={14} className="text-slate-600 group-hover/link:text-blue-400 transition-colors" />
+                <ArrowRight size={14} className="text-slate-600 group-hover/link:text-indigo-400 transition-colors" />
               </a>
             </div>
           </div>
@@ -681,22 +681,11 @@ export default function DeputadoDetailPage() {
     return params;
   }, [discursoYear, discursoMonth, discursoDataInicio, discursoDataFim, discursoPage, discursoItens]);
 
-  const { proposicaoDataInicio, proposicaoDataFim, proposicaoSelectedYear } = useMemo(() => {
-    if (proposicaoMonth === 'all') {
-      return {
-        proposicaoDataInicio: undefined,
-        proposicaoDataFim: undefined,
-        proposicaoSelectedYear: proposicaoYear
-      };
-    } else {
-      const lastDay = new Date(proposicaoYear, parseInt(proposicaoMonth), 0).getDate();
-      return {
-        proposicaoDataInicio: `${proposicaoYear}-${proposicaoMonth}-01`,
-        proposicaoDataFim: `${proposicaoYear}-${proposicaoMonth}-${lastDay}`,
-        proposicaoSelectedYear: undefined
-      };
-    }
-  }, [proposicaoYear, proposicaoMonth]);
+  const { proposicaoSelectedYear } = useMemo(() => {
+    return {
+      proposicaoSelectedYear: proposicaoYear
+    };
+  }, [proposicaoYear]);
 
   const { data: dep, isLoading, isError, refetch } = useDeputado(deputadoId);
   const { data: despesasData, isLoading: loadingDesp, isFetching: fetchingDesp } = useDeputadoDespesas(deputadoId, {
@@ -719,18 +708,32 @@ export default function DeputadoDetailPage() {
   const { data: discursosData, isLoading: loadingDiscursos } = useDeputadoDiscursos(deputadoId, discourseParams);
   const { data: ocupacoesData, isLoading: loadingOcupacoes } = useDeputadoOcupacoes(deputadoId);
   const { data: profissoesData } = useDeputadoProfissoes(deputadoId);
-  const { data: proposicoesData, isLoading: loadingProposicoes } = useProposicoesByAutor(deputadoId, {
-    pagina: proposicaoPage,
-    itens: proposicaoItens,
-    dataInicio: proposicaoDataInicio,
-    dataFim: proposicaoDataFim,
-    ano: proposicaoSelectedYear,
+  const { data: proposicaoTotalsFiltered, isLoading: loadingTotalsFiltered } = useProposicaoTotals(deputadoId, { 
+    ano: proposicaoYear 
   });
+
   const { data: emendasData, isLoading: loadingEmendas } = useDeputadoEmendas(deputadoId, emendaYear);
   const emendas = emendasData || [];
 
-  // Totais: um para a aba Resumo (histórico completo)
-  const { data: proposicaoTotalsLifetime, isLoading: loadingTotalsLifetime } = useProposicaoTotals(deputadoId);
+  const { data: proposicoesData, isLoading: loadingProposicoes } = useProposicoesByAutor(deputadoId, {
+    pagina: proposicaoPage,
+    itens: proposicaoMonth === 'all' ? proposicaoItens : 100, // Fetch more to allow FE filtering
+    ano: proposicaoSelectedYear,
+  });
+
+  const displayProposicoes = useMemo(() => {
+    const raw = proposicoesData?.items || [];
+    if (proposicaoMonth === 'all') return raw;
+    return raw.filter(p => {
+      const pMonth = new Date(p.dataApresentacao).getMonth() + 1;
+      return pMonth === parseInt(proposicaoMonth);
+    });
+  }, [proposicoesData?.items, proposicaoMonth]);
+
+  const displayCount = useMemo(() => {
+    if (proposicaoMonth === 'all') return proposicoesData?.totalItems || 0;
+    return displayProposicoes.length;
+  }, [proposicoesData?.totalItems, displayProposicoes.length, proposicaoMonth]);
 
   const proposicoes = proposicoesData?.items || [];
   const totalPaginasProposicoes = proposicoesData?.totalPaginas;
@@ -1452,24 +1455,24 @@ export default function DeputadoDetailPage() {
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Auxílio-moradia</span>
                           <div className="flex flex-col items-end">
-                            <button 
+                            <button
                               onClick={() => beneficiosCard?.auxilio_moradia_mensal && setShowMoradiaModal(true)}
                               className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg flex items-center gap-2 transition-all relative overflow-hidden group/btn
-                                ${beneficiosCard?.auxilio_moradia?.includes('Não recebe') 
-                                  ? 'bg-white/5 text-slate-500 border border-white/5 opacity-60' 
+                                ${beneficiosCard?.auxilio_moradia?.includes('Não recebe')
+                                  ? 'bg-white/5 text-slate-500 border border-white/5 opacity-60'
                                   : 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/5'}
-                                ${beneficiosCard?.auxilio_moradia_mensal 
-                                  ? 'cursor-pointer hover:bg-blue-500/20 active:scale-95' 
+                                ${beneficiosCard?.auxilio_moradia_mensal
+                                  ? 'cursor-pointer hover:bg-blue-500/20 active:scale-95'
                                   : 'cursor-default'}`}>
-                              
+
                               {beneficiosCard?.auxilio_moradia_mensal && (
                                 <span className="absolute inset-0 bg-blue-500/10 animate-pulse pointer-events-none"></span>
                               )}
-                              
+
                               {beneficiosCard?.auxilio_moradia || 'Não informado'}
                               {beneficiosCard?.auxilio_moradia_mensal && <Info size={12} className="opacity-60 group-hover/btn:scale-125 transition-transform" />}
                             </button>
-                            
+
                             {beneficiosCard?.auxilio_moradia_mensal && (
                               <span className="text-[7px] font-black text-blue-500/50 uppercase tracking-widest mt-1.5 animate-pulse">
                                 Ver Histórico Mensal
@@ -1541,26 +1544,61 @@ export default function DeputadoDetailPage() {
                   <div className="w-14 h-14 bg-blue-500/15 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/10">
                     <FileText size={28} />
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Produção Legislativa</h3>
-                    <p className="text-slate-500 text-sm font-medium">Histórico acumulado de proposições e atos</p>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">Produção Legislativa</h3>
+                      <a 
+                        href={`https://www.camara.leg.br/deputados/${deputadoId}?ano=${proposicaoYear}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-all border border-blue-500/20 group/link"
+                        title={`Ver todas as propostas de ${proposicaoYear} no Portal da Câmara`}
+                      >
+                        <ExternalLink size={14} className="group-hover/link:scale-110 transition-transform" />
+                      </a>
+                    </div>
+                    <p className="text-slate-500 text-sm font-medium mt-1">Histórico acumulado de proposições e atos</p>
                   </div>
                 </div>
 
-                <div className="px-6 py-4 bg-gold/15 border border-gold/20 rounded-[2rem] flex flex-col items-center justify-center shadow-xl shadow-gold/5">
-                  <span className="text-gold/60 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total de Atos</span>
-                  <span className="text-gold text-4xl font-black tracking-tighter leading-none">{proposicaoTotalsLifetime?.total || 0}</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Seletor de Ano */}
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl transition-all hover:border-blue-500/40 hover:bg-white/10 group/sel">
+                    <Calendar size={16} className="text-blue-400" />
+                    <select
+                      value={proposicaoYear}
+                      onChange={(e) => setProposicaoYear(parseInt(e.target.value))}
+                      className="bg-transparent border-none text-sm font-bold text-white focus:outline-none appearance-none cursor-pointer pr-2"
+                    >
+                      {YEARS.map(y => (
+                        <option key={`prop-year-${y}`} value={y} className="bg-navy">
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="text-slate-500 group-hover/sel:text-white transition-colors" />
+                  </div>
+
+                  <div className="px-5 py-4 bg-gold/15 border border-gold/20 rounded-[2rem] flex flex-col items-center justify-center shadow-xl shadow-gold/5 min-w-[110px]">
+                    <span className="text-gold/60 text-[9px] font-black uppercase tracking-widest mb-1">Totais Oficiais</span>
+                    <span className="text-gold text-3xl font-black tracking-tighter leading-none">{proposicaoTotalsFiltered?.total || 0}</span>
+                  </div>
+
+                  <div className="px-5 py-4 bg-blue-500/15 border border-blue-500/20 rounded-[2rem] flex flex-col items-center justify-center shadow-xl shadow-blue-500/5 min-w-[110px]">
+                    <span className="text-blue-400/60 text-[9px] font-black uppercase tracking-widest mb-1">Relatorias</span>
+                    <span className="text-blue-400 text-3xl font-black tracking-tighter leading-none">{proposicaoTotalsFiltered?.relatadas || 0}</span>
+                  </div>
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[420px] relative z-10">
-                {loadingTotalsLifetime ? (
+                {loadingTotalsFiltered ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 animate-pulse">
                     {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="h-14 bg-white/5 rounded-2xl" />)}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
-                    {Object.entries(proposicaoTotalsLifetime?.counts || {})
+                    {Object.entries(proposicaoTotalsFiltered?.counts || {})
                       .sort(([, a], [, b]) => b - a)
                       .map(([tipo, count]) => {
                         const nomeCompleto = PROPOSICOES_MAP[tipo] || `Sigla: ${tipo}`;
@@ -1574,8 +1612,34 @@ export default function DeputadoDetailPage() {
                           </div>
                         );
                       })}
+
+                    {/* Atos Administrativos/Processuais (Diferença para o Site) */}
+                    {(proposicaoTotalsFiltered?.total || 0) > (proposicoesData?.totalItems || 0) && (
+                      <div className="group flex items-center justify-between p-4 bg-blue-500/5 border border-blue-500/10 rounded-[1.5rem] hover:bg-blue-500/10 transition-all duration-300 border-dashed">
+                        <div className="flex flex-col">
+                          <span className="text-blue-400 font-black text-xs uppercase tracking-widest">Atos Proc.</span>
+                          <span className="text-slate-600 text-[9px] font-bold uppercase">Movimentações & Burocracia</span>
+                        </div>
+                        <span className="text-blue-400 font-black text-xl tracking-tighter">
+                          {(proposicaoTotalsFiltered?.total || 0) - (proposicoesData?.totalItems || 0)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-white/5 flex items-start gap-4 bg-white/[0.02] p-6 rounded-[2rem]">
+                <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 shrink-0">
+                  <Info size={18} />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-white font-black uppercase text-[10px] tracking-widest">Por que os totais divergem?</h4>
+                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed italic">
+                    A diferença de <span className="text-blue-400 font-black">{(proposicaoTotalsFiltered?.total || 0) - (proposicoesData?.totalItems || 0)} atos</span> refere-se a formalidades processuais e administrativas (como retirada de pauta, requerimentos formais ou correções de texto). 
+                    A lista de Projetos exibe apenas proposições de mérito reais (Leis, PECs, etc), enquanto o total da Câmara engloba toda a movimentação burocrática parlamentar.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -2051,6 +2115,12 @@ export default function DeputadoDetailPage() {
                   {MONTHS.map(m => <option key={`prop-month-${m.value}`} value={m.value} className="bg-navy">{m.label}</option>)}
                 </select>
               </div>
+
+              <div className="ml-auto">
+                <span className="px-3 py-1.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-black rounded-full border border-indigo-500/20 uppercase tracking-tighter shadow-sm shadow-indigo-500/5">
+                  {loadingProposicoes ? '...' : `${displayCount} resultados`}
+                </span>
+              </div>
             </div>
 
             {loadingProposicoes && <TableSkeleton rows={10} />}
@@ -2059,7 +2129,7 @@ export default function DeputadoDetailPage() {
               <div className="bg-slate-card border border-white/5 rounded-[2rem] overflow-hidden">
                 <DataTable
                   columns={proposicaoColumns}
-                  data={proposicoesData.items}
+                  data={displayProposicoes}
                   getRowCanExpand={() => true}
                   renderSubComponent={({ row }) => <ProposicaoDetailExpansion row={row} />}
                   getRowId={(row) => String(row.id)}
@@ -2497,7 +2567,7 @@ export default function DeputadoDetailPage() {
                         <ChevronDown size={14} />
                       </div>
                     </div>
-                    <Link 
+                    <Link
                       href={`https://www.camara.leg.br/deputados/${deputadoId}/auxilio-moradia?ano=${beneficiosYear}`}
                       target="_blank"
                       className="p-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl text-indigo-400 transition-all group/link"
@@ -2507,7 +2577,7 @@ export default function DeputadoDetailPage() {
                     </Link>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowMoradiaModal(false)}
                   className="p-3 hover:bg-white/10 rounded-2xl transition-all group shadow-inner"
                 >
@@ -2517,10 +2587,10 @@ export default function DeputadoDetailPage() {
 
               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[380px] min-h-[350px]">
                 {isLoadingBeneficiosModal ? (
-                   <div className="flex flex-col items-center justify-center h-full gap-4 opacity-40">
-                      <Loader2 size={32} className="animate-spin text-blue-500" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Sincronizando Histórico...</p>
-                   </div>
+                  <div className="flex flex-col items-center justify-center h-full gap-4 opacity-40">
+                    <Loader2 size={32} className="animate-spin text-blue-500" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Sincronizando Histórico...</p>
+                  </div>
                 ) : (
                   <table className="w-full text-left border-separate border-spacing-y-2">
                     <thead>
@@ -2544,16 +2614,16 @@ export default function DeputadoDetailPage() {
                       ) : (
                         <tr>
                           <td colSpan={2} className="py-20 text-center">
-                             <div className="flex flex-col items-center gap-3 opacity-30">
-                               <AlertTriangle size={32} />
-                               <p className="text-[10px] font-black uppercase">Sem lançamentos oficiais para {beneficiosYear}</p>
-                             </div>
+                            <div className="flex flex-col items-center gap-3 opacity-30">
+                              <AlertTriangle size={32} />
+                              <p className="text-[10px] font-black uppercase">Sem lançamentos oficiais para {beneficiosYear}</p>
+                            </div>
                           </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
-                )} 
+                )}
               </div>
 
               <div className="mt-8">

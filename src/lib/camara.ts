@@ -186,6 +186,7 @@ export interface PaginatedResponse<T> {
   items: T[];
   hasNext: boolean;
   totalPaginas?: number;
+  totalItems?: number;
 }
 
 export interface EmendaOrcamentaria {
@@ -204,7 +205,7 @@ export interface EmendaOrcamentaria {
 // Generic fetcher
 // ---------------------------------------------------------------------------
 
-async function camaraFetch<T>(url: string): Promise<T> {
+async function camaraFetchWithHeaders<T>(url: string): Promise<{ data: T; totalItems?: number }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
 
@@ -218,7 +219,24 @@ async function camaraFetch<T>(url: string): Promise<T> {
       throw new Error(`Câmara API Error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    
+    // Extração robusta de headers (ignora case)
+    let totalCount: string | null = null;
+    response.headers.forEach((value, key) => {
+      if (key.toLowerCase() === 'x-total-count') {
+        totalCount = value;
+      }
+    });
+    
+    if (totalCount) {
+      console.log(`[Câmara API] ${url} -> totalItems: ${totalCount}`);
+    }
+
+    return { 
+      data, 
+      totalItems: totalCount ? parseInt(totalCount) : undefined 
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -259,7 +277,7 @@ export async function fetchDeputados(params: DeputadosParams = {}): Promise<Pagi
   const { pagina = 1, itens = 20, ordem = 'ASC', ordenarPor = 'nome', ...rest } = params;
   const url = buildUrl('/deputados', { pagina, itens, ordem, ordenarPor, ...rest });
 
-  const data = await camaraFetch<{
+  const { data, totalItems } = await camaraFetchWithHeaders<{
     dados: Deputado[];
     links: Array<{ rel: string; href: string }>;
   }>(url);
@@ -282,7 +300,7 @@ export async function fetchDeputadoById(id: number): Promise<DeputadoDetalhado |
   const url = buildUrl(`/deputados/${id}`);
 
   try {
-    const data = await camaraFetch<{ dados: DeputadoDetalhado }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: DeputadoDetalhado }>(url);
     return data.dados || null;
   } catch {
     return null;
@@ -309,7 +327,7 @@ export async function fetchDeputadoDespesas(
   const { pagina = 1, itens = 15, ordem = 'DESC', ordenarPor = 'dataDocumento', ...rest } = params;
   const url = buildUrl(`/deputados/${id}/despesas`, { pagina, itens, ordem, ordenarPor, ...rest });
 
-  const data = await camaraFetch<{
+  const { data, totalItems } = await camaraFetchWithHeaders<{
     dados: Despesa[];
     links: Array<{ rel: string; href: string }>;
   }>(url);
@@ -336,7 +354,7 @@ export async function fetchPartidos(params: { pagina?: number; itens?: number } 
   const { pagina = 1, itens = 50 } = params;
   const url = buildUrl('/partidos', { pagina, itens, ordem: 'ASC', ordenarPor: 'sigla' });
 
-  const data = await camaraFetch<{
+  const { data, totalItems } = await camaraFetchWithHeaders<{
     dados: Partido[];
     links: Array<{ rel: string; href: string }>;
   }>(url);
@@ -344,6 +362,7 @@ export async function fetchPartidos(params: { pagina?: number; itens?: number } 
   return {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
+    totalItems,
   };
 }
 
@@ -368,7 +387,7 @@ export async function fetchProposicoes(params: {
     ...rest,
   });
 
-  const data = await camaraFetch<{
+  const { data, totalItems } = await camaraFetchWithHeaders<{
     dados: Proposicao[];
     links: Array<{ rel: string; href: string }>;
   }>(url);
@@ -384,6 +403,7 @@ export async function fetchProposicoes(params: {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
     totalPaginas,
+    totalItems,
   };
 }
 
@@ -417,7 +437,7 @@ export async function fetchProposicaoById(id: number): Promise<Proposicao | null
   const url = buildUrl(`/proposicoes/${id}`);
 
   try {
-    const data = await camaraFetch<{ dados: Proposicao }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: Proposicao }>(url);
     return data.dados || null;
   } catch {
     return null;
@@ -428,7 +448,7 @@ export async function fetchProposicaoAutores(id: number): Promise<ProposicaoAuto
   const url = buildUrl(`/proposicoes/${id}/autores`);
 
   try {
-    const data = await camaraFetch<{ dados: ProposicaoAutor[] }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: ProposicaoAutor[] }>(url);
     return data.dados || [];
   } catch {
     return [];
@@ -438,32 +458,47 @@ export async function fetchProposicaoAutores(id: number): Promise<ProposicaoAuto
 export async function fetchProposicaoTotals(
   idDeputadoAutor: number, 
   filters: { ano?: number; dataInicio?: string; dataFim?: string } = {}
-): Promise<ProposicaoTotals> {
-  const firstPage = await fetchProposicoes({ idDeputadoAutor, itens: 100, ...filters, pagina: 1 });
+): Promise<ProposicaoTotals & { relatadas: number; apiTotal: number }> {
+  // 1. Fetch Totais Oficiais (Scraping para paridade total com o site da Câmara)
+  let officialAutoria = 0;
+  let officialRelatadas = 0;
   
-  if (firstPage.items.length === 0) {
-    return { counts: {}, total: 0 };
+  if (filters.ano) {
+    try {
+      const resp = await fetch(`/api/proposicoes/legislative-totals?id=${idDeputadoAutor}&ano=${filters.ano}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        officialAutoria = data.autoria || 0;
+        officialRelatadas = data.relatadas || 0;
+      }
+    } catch (err) {
+      console.error('Erro ao buscar totais oficiais:', err);
+    }
   }
 
-  const totalPaginas = firstPage.totalPaginas || 1;
-  const allProposicoes = [...firstPage.items];
+  // 2. Fetch Breakdown via API v2 (Para mostrar o gráfico/lista de tipos)
+  const autoriaData = await fetchProposicoes({ idDeputadoAutor, itens: 100, ...filters, pagina: 1 });
+  let allAutoria = [...autoriaData.items];
+  const totalPaginasAut = autoriaData.totalPaginas || 1;
 
-  if (totalPaginas > 1) {
-    const remainingPages = Array.from({ length: totalPaginas - 1 }, (_, i) => i + 2);
+  if (totalPaginasAut > 1) {
+    const remainingPages = Array.from({ length: totalPaginasAut - 1 }, (_, i) => i + 2);
     const otherPages = await Promise.all(
       remainingPages.map(p => fetchProposicoes({ idDeputadoAutor, itens: 100, ...filters, pagina: p }))
     );
-    otherPages.forEach(p => allProposicoes.push(...p.items));
+    otherPages.forEach(p => allAutoria.push(...p.items));
   }
 
   const counts: Record<string, number> = {};
-  allProposicoes.forEach(p => {
+  allAutoria.forEach(p => {
     counts[p.siglaTipo] = (counts[p.siglaTipo] || 0) + 1;
   });
 
   return {
     counts,
-    total: allProposicoes.length,
+    total: officialAutoria || allAutoria.length, // Usamos o oficial se tivermos, se não o da API
+    relatadas: officialRelatadas,
+    apiTotal: allAutoria.length // Guardamos o total da API para transparência/breakdown
   };
 }
 
@@ -475,7 +510,7 @@ export async function fetchFrentes(params: { pagina?: number; itens?: number } =
   const { pagina = 1, itens = 20 } = params;
   const url = buildUrl('/frentes', { pagina, itens });
 
-  const data = await camaraFetch<{
+  const { data, totalItems } = await camaraFetchWithHeaders<{
     dados: Frente[];
     links: Array<{ rel: string; href: string }>;
   }>(url);
@@ -483,6 +518,7 @@ export async function fetchFrentes(params: { pagina?: number; itens?: number } =
   return {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
+    totalItems,
   };
 }
 
@@ -509,7 +545,7 @@ export async function fetchDeputadoOrgaos(
   const { pagina = 1, itens = 50 } = params;
   const url = buildUrl(`/deputados/${id}/orgaos`, { pagina, itens });
 
-  const data = await camaraFetch<{
+  const { data, totalItems } = await camaraFetchWithHeaders<{
     dados: OrgaoDeputado[];
     links: Array<{ rel: string; href: string }>;
   }>(url);
@@ -517,6 +553,7 @@ export async function fetchDeputadoOrgaos(
   return {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
+    totalItems,
   };
 }
 
@@ -535,7 +572,7 @@ export async function fetchDeputadoFrentes(id: number): Promise<FrenteDeputado[]
   const url = buildUrl(`/deputados/${id}/frentes`);
 
   try {
-    const data = await camaraFetch<{ dados: FrenteDeputado[] }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: FrenteDeputado[] }>(url);
     return data.dados || [];
   } catch {
     return [];
@@ -608,7 +645,7 @@ export async function fetchVotacoes(params: {
   const { pagina = 1, itens = 10, ordem = 'DESC', ordenarPor = 'dataHoraRegistro', ...rest } = params;
   const url = buildUrl('/votacoes', { pagina, itens, ordem, ordenarPor, ...rest });
 
-  const data = await camaraFetch<{
+  const { data, totalItems } = await camaraFetchWithHeaders<{
     dados: Votacao[];
     links: Array<{ rel: string; href: string }>;
   }>(url);
@@ -624,6 +661,7 @@ export async function fetchVotacoes(params: {
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
     totalPaginas,
+    totalItems,
   };
 }
 
@@ -651,7 +689,7 @@ export async function fetchVotacaoVotos(idVotacao: string): Promise<VotoDeputado
   const url = buildUrl(`/votacoes/${idVotacao}/votos`);
 
   try {
-    const data = await camaraFetch<{ dados: VotoDeputado[] }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: VotoDeputado[] }>(url);
     return data.dados || [];
   } catch {
     return [];
@@ -662,7 +700,7 @@ export async function fetchVotacaoById(id: string): Promise<VotacaoDetalhada | n
   const url = buildUrl(`/votacoes/${id}`);
 
   try {
-    const data = await camaraFetch<{ dados: VotacaoDetalhada }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: VotacaoDetalhada }>(url);
     return data.dados || null;
   } catch {
     return null;
@@ -673,7 +711,7 @@ export async function fetchVotacaoOrientacoes(id: string): Promise<Orientacao[]>
   const url = buildUrl(`/votacoes/${id}/orientacoes`);
 
   try {
-    const data = await camaraFetch<{ dados: Orientacao[] }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: Orientacao[] }>(url);
     return data.dados || [];
   } catch {
     return [];
@@ -687,7 +725,7 @@ export async function fetchVotacaoOrientacoes(id: string): Promise<Orientacao[]>
 export async function fetchDeputadoHistorico(id: number): Promise<HistoricoDeputado[]> {
   const url = buildUrl(`/deputados/${id}/historico`);
   try {
-    const data = await camaraFetch<{ dados: HistoricoDeputado[] }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: HistoricoDeputado[] }>(url);
     return data.dados || [];
   } catch {
     return [];
@@ -705,7 +743,7 @@ export async function fetchDeputadoDiscursos(
   const { pagina = 1, itens = 10 } = params;
   const url = buildUrl(`/deputados/${id}/discursos`, { ...params, ordenarPor: 'dataHoraInicio', ordem: 'DESC' });
 
-  const data = await camaraFetch<{
+  const { data, totalItems } = await camaraFetchWithHeaders<{
     dados: Discurso[];
     links: Array<{ rel: string; href: string }>;
   }>(url);
@@ -721,6 +759,7 @@ export async function fetchDeputadoDiscursos(
     items: data.dados || [],
     hasNext: data.links?.some(l => l.rel === 'next') || false,
     totalPaginas,
+    totalItems,
   };
 }
 
@@ -731,7 +770,7 @@ export async function fetchDeputadoDiscursos(
 export async function fetchDeputadoOcupacoes(id: number): Promise<Ocupacao[]> {
   const url = buildUrl(`/deputados/${id}/ocupacoes`);
   try {
-    const data = await camaraFetch<{ dados: Ocupacao[] }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: Ocupacao[] }>(url);
     return data.dados || [];
   } catch {
     return [];
@@ -741,7 +780,7 @@ export async function fetchDeputadoOcupacoes(id: number): Promise<Ocupacao[]> {
 export async function fetchDeputadoProfissoes(id: number): Promise<Profissao[]> {
   const url = buildUrl(`/deputados/${id}/profissoes`);
   try {
-    const data = await camaraFetch<{ dados: Profissao[] }>(url);
+    const { data } = await camaraFetchWithHeaders<{ dados: Profissao[] }>(url);
     return data.dados || [];
   } catch {
     return [];
