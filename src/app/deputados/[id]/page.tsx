@@ -11,10 +11,7 @@ import {
   useVotacaoOrientacoes,
   useSecretarios,
   useVotacao,
-  useDeputadoHistorico,
   useDeputadoDiscursos,
-  useDeputadoOcupacoes,
-  useDeputadoProfissoes,
   useProposicoesByAutor,
   useProposicao,
   useProposicaoAutores,
@@ -61,6 +58,55 @@ import type { Votacao, VotoDeputado, Proposicao, Despesa, EmendaOrcamentaria } f
 
 function formatCurrency(v: number): string {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function getSocialIcon(url: string) {
+  const domain = url.toLowerCase();
+
+  // Custom SVGs for better compatibility and branding
+  if (domain.includes('twitter.com') || domain.includes('x.com')) {
+    return (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    );
+  }
+
+  if (domain.includes('facebook.com')) {
+    return (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+      </svg>
+    );
+  }
+
+  if (domain.includes('instagram.com')) {
+    return (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current stroke-2" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+      </svg>
+    );
+  }
+
+  if (domain.includes('youtube.com')) {
+    return (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+      </svg>
+    );
+  }
+
+  if (domain.includes('linkedin.com')) {
+    return (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+      </svg>
+    );
+  }
+
+  return <ExternalLink size={18} />;
 }
 
 const CURRENT_YEAR = 2026;
@@ -598,7 +644,7 @@ export default function DeputadoDetailPage() {
   const params = useParams<{ id: string }>();
   const deputadoId = parseInt(params.id);
 
-  const [activeTab, setActiveTab] = useState('resumo');
+  const [activeTab, setActiveTab] = useState('despesas');
   const [despesaYear, setDespesaYear] = useState(CURRENT_YEAR);
   const [despesaMonth, setDespesaMonth] = useState('all');
 
@@ -704,12 +750,9 @@ export default function DeputadoDetailPage() {
   });
 
   // New Data Hooks
-  const { data: historicoData, isLoading: loadingHistorico } = useDeputadoHistorico(deputadoId);
   const { data: discursosData, isLoading: loadingDiscursos } = useDeputadoDiscursos(deputadoId, discourseParams);
-  const { data: ocupacoesData, isLoading: loadingOcupacoes } = useDeputadoOcupacoes(deputadoId);
-  const { data: profissoesData } = useDeputadoProfissoes(deputadoId);
-  const { data: proposicaoTotalsFiltered, isLoading: loadingTotalsFiltered } = useProposicaoTotals(deputadoId, { 
-    ano: proposicaoYear 
+  const { data: proposicaoTotalsFiltered, isLoading: loadingTotalsFiltered } = useProposicaoTotals(deputadoId, {
+    ano: proposicaoYear
   });
 
   const { data: emendasData, isLoading: loadingEmendas } = useDeputadoEmendas(deputadoId, emendaYear);
@@ -768,6 +811,36 @@ export default function DeputadoDetailPage() {
     isError: errorSecretarios,
     error: secretarioError
   } = useSecretarios(searchName);
+
+  const filteredSecretarios = useMemo(() => {
+    if (!secretarios) return [];
+    if (!beneficiosCard?.pessoal_gabinete_nomes || beneficiosCard.pessoal_gabinete_nomes.length === 0) {
+      return secretarios;
+    }
+
+    // Normalize names for comparison (remove accents and to lowercase)
+    const activeNames = beneficiosCard.pessoal_gabinete_nomes.map(n =>
+      n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+    );
+
+    return secretarios.filter(s => {
+      const normalizedS = s.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      // Look for the name in the active list - using fuzzy match to account for abbreviations
+      return activeNames.some(active => {
+        // Simple heuristic: if the names are very similar or one contains the other
+        if (normalizedS === active) return true;
+
+        // Split names to check components (handles abbreviations like "JOAO S. SILVA")
+        const partsS = normalizedS.split(/\s+/);
+        const partsA = active.split(/\s+/);
+
+        // If first and last name match, consider it a match
+        if (partsS[0] === partsA[0] && partsS[partsS.length - 1] === partsA[partsA.length - 1]) return true;
+
+        return false;
+      });
+    });
+  }, [secretarios, beneficiosCard?.pessoal_gabinete_nomes]);
 
   const { data: aggregatedExpenses, isLoading: loadingAggregatedExpenses } = useDeputadoDespesasAggregation(deputadoId, expenseSelectedYear);
   const { data: tabAggregatedExpenses, isLoading: loadingTabAggregatedExpenses } = useDeputadoDespesasAggregation(deputadoId, despesaYear);
@@ -1146,161 +1219,189 @@ export default function DeputadoDetailPage() {
   const gabinete = status.gabinete;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 md:py-12 space-y-10">
+    <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
       {/* Nav */}
-      <Link href="/deputados" className="group inline-flex items-center gap-2 text-slate-400 hover:text-gold transition-all text-sm font-medium">
+      <Link href="/deputados" className="group inline-flex items-center gap-2 text-slate-400 hover:text-gold transition-all text-sm font-medium mb-10">
         <div className="p-2 bg-slate-card rounded-xl border border-white/5 group-hover:border-gold/30 transition-all">
           <ArrowLeft size={16} />
         </div>
         Voltar para lista de deputados
       </Link>
 
-      {/* Profile Header */}
-      <div className="flex flex-col md:flex-row gap-8 items-start">
-        <div className="relative shrink-0">
-          <div className="w-48 h-48 rounded-3xl overflow-hidden border-4 border-gold/20 bg-gradient-to-b from-gold/10 to-transparent">
-            <Image
-              src={status.urlFoto}
-              alt={status.nome}
-              width={192}
-              height={192}
-              className="object-cover w-full h-full"
-              unoptimized
-              priority
-            />
-          </div>
-          <div className="absolute -bottom-3 -right-3 px-3 py-1 bg-gold text-navy font-black text-xs rounded-full shadow-lg">
-            {status.situacao}
-          </div>
-        </div>
+      <div className="flex flex-col lg:flex-row gap-10 items-start">
+        {/* Sidebar: Informações do Deputado */}
+        <aside className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-8 space-y-6">
+          <div className="bg-navy/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-8 space-y-8 overflow-hidden relative shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
+            {/* Efeito de iluminação premium */}
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-gold/5 to-transparent pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 blur-[60px] -mr-16 -mt-16 rounded-full"></div>
 
-        <div className="flex-1 space-y-4">
-          <div className="space-y-1">
-            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter">{status.nome}</h1>
-            <p className="text-slate-500 text-sm">{dep.nomeCivil}</p>
-          </div>
+            {/* Foto de Perfil Premium */}
+            <div className="relative group/avatar flex flex-col items-center">
+              <div className="relative">
+                {/* Glow dinâmico */}
+                <div className="absolute inset-0 bg-gold/30 rounded-[3rem] blur-2xl opacity-0 group-hover/avatar:opacity-100 transition-all duration-700 scale-90 group-hover/avatar:scale-100"></div>
 
-          <div className="flex flex-wrap gap-3">
-            <span className="px-4 py-1.5 bg-gold/10 text-gold text-sm font-black rounded-full border border-gold/20">{status.siglaPartido}</span>
-            <span className="px-4 py-1.5 bg-white/5 text-slate-300 text-sm font-bold rounded-full border border-white/10 flex items-center gap-1">
-              <MapPin size={14} /> {status.siglaUf}
-            </span>
-            <span className="px-4 py-1.5 bg-white/5 text-slate-400 text-sm rounded-full border border-white/10 flex items-center gap-1">
-              <GraduationCap size={14} /> {dep.escolaridade}
-            </span>
-            <span className="px-4 py-1.5 bg-white/5 text-slate-400 text-sm rounded-full border border-white/10 flex items-center gap-1">
-              <Calendar size={14} /> Nascimento: {new Date(dep.dataNascimento).toLocaleDateString('pt-BR')}
-            </span>
-          </div>
+                {/* Moldura multi-camada */}
+                <div className="relative w-52 h-52 rounded-[3.5rem] p-1.5 bg-gradient-to-br from-gold/50 via-white/5 to-navy border border-white/10 shadow-2xl z-10 overflow-hidden group-hover/avatar:translate-y-[-4px] transition-transform duration-500">
+                  <div className="w-full h-full rounded-[3rem] overflow-hidden relative">
+                    <Image
+                      src={status.urlFoto}
+                      alt={status.nome}
+                      width={208}
+                      height={208}
+                      className="object-cover w-full h-full scale-105 group-hover/avatar:scale-115 transition-transform duration-1000 ease-out"
+                      unoptimized
+                      priority
+                    />
+                    {/* Overlay de vinheta suave na foto */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-transparent to-transparent opacity-60"></div>
+                  </div>
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-navy/50 rounded-2xl border border-white/5 space-y-1">
-              <span className="text-[10px] text-slate-500 font-bold uppercase">Gabinete</span>
-              <p className="text-white text-sm font-bold">Prédio {gabinete.predio}, Sala {gabinete.sala}</p>
+                {/* Badge de Status Flutuante */}
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] z-20 border border-white/20">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-slate-900 dark:text-white font-black text-[9px] uppercase tracking-[0.15em] whitespace-nowrap">
+                    {status.situacao}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="p-4 bg-navy/50 rounded-2xl border border-white/5 space-y-1">
-              <span className="text-[10px] text-slate-500 font-bold uppercase">Telefone</span>
-              <p className="text-white text-sm font-bold flex items-center gap-1"><Phone size={12} /> {gabinete.telefone}</p>
+
+            {/* Identificação Principal Modernizada */}
+            <div className="text-center space-y-4 pt-4 relative z-10">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-black text-white tracking-tighter leading-[0.9] bg-gradient-to-b from-white via-white to-white/70 bg-clip-text">
+                  {status.nome}
+                </h1>
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] opacity-80">{dep.nomeCivil}</p>
+              </div>
+
+              <div className="flex items-center justify-center gap-3">
+                <div className="group/badge relative">
+                  <div className="absolute inset-0 bg-gold/20 blur-lg opacity-0 group-hover/badge:opacity-100 transition-opacity"></div>
+                  <span className="relative px-4 py-1.5 bg-gold/10 text-gold text-[10px] font-black rounded-xl border border-gold/20 tracking-widest block transition-all group-hover/badge:bg-gold/20">
+                    {status.siglaPartido}
+                  </span>
+                </div>
+
+                <div className="group/badge relative">
+                  <div className="absolute inset-0 bg-white/10 blur-lg opacity-0 group-hover/badge:opacity-100 transition-opacity"></div>
+                  <span className="relative px-4 py-1.5 bg-white/5 text-slate-300 text-[10px] font-black rounded-xl border border-white/10 flex items-center gap-2 uppercase tracking-widest transition-all group-hover/badge:bg-white/10">
+                    <MapPin size={12} className="text-gold" />
+                    {status.siglaUf}
+                  </span>
+                </div>
+              </div>
+
+              <a
+                href={`https://www.camara.leg.br/deputados/${dep.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-gold/10 text-[9px] font-black text-slate-400 hover:text-gold uppercase tracking-[0.2em] rounded-xl border border-white/5 hover:border-gold/30 transition-all group/official shadow-sm mt-3"
+              >
+                <ExternalLink size={12} className="group-hover/official:translate-x-0.5 group-hover/official:-translate-y-0.5 transition-transform" />
+                Perfil Oficial Câmara
+              </a>
             </div>
-            <div className="p-4 bg-navy/50 rounded-2xl border border-white/5 space-y-1">
-              <span className="text-[10px] text-slate-500 font-bold uppercase">E-mail</span>
-              <p className="text-gold text-sm font-bold truncate flex items-center gap-1"><Mail size={12} /> {gabinete.email}</p>
+
+            <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent w-full"></div>
+
+            {/* Informações Biográficas */}
+            <div className="space-y-4 px-2">
+              <div className="flex items-center gap-4 group/bio">
+                <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-500 group-hover/bio:text-gold group-hover/bio:bg-gold/10 transition-all duration-300">
+                  <GraduationCap size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-0.5">Escolaridade</span>
+                  <span className="text-white text-xs font-bold leading-tight block truncate">{dep.escolaridade}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 group/bio">
+                <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-500 group-hover/bio:text-gold group-hover/bio:bg-gold/10 transition-all duration-300">
+                  <Calendar size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-0.5">Nascimento</span>
+                  <span className="text-white text-xs font-bold block">{new Date(dep.dataNascimento).toLocaleDateString('pt-BR')}</span>
+                </div>
+              </div>
             </div>
+
+            <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent w-full"></div>
+
+            {/* Contato Gabinete */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Gabinete</p>
+              </div>
+
+              <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4 group/gab transition-all hover:bg-white/10 hover:border-white/10 shadow-inner">
+                <div className="flex items-center gap-4">
+                  <div className="w-9 h-9 bg-navy/60 rounded-xl flex items-center justify-center text-gold border border-white/5 group-hover/gab:scale-110 transition-transform"><Building2 size={16} /></div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] text-slate-500 font-black uppercase block mb-0.5">Endereço</span>
+                    <p className="text-white text-xs font-bold truncate">Prédio {gabinete.predio}, Sala {gabinete.sala}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-9 h-9 bg-navy/60 rounded-xl flex items-center justify-center text-gold border border-white/5 group-hover/gab:scale-110 transition-transform"><Phone size={16} /></div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] text-slate-500 font-black uppercase block mb-0.5">Telefone</span>
+                    <p className="text-white text-xs font-bold">{gabinete.telefone}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-9 h-9 bg-navy/60 rounded-xl flex items-center justify-center text-gold border border-white/5 group-hover/gab:scale-110 transition-transform"><Mail size={16} /></div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] text-slate-500 font-black uppercase block mb-0.5">E-mail</span>
+                    <p className="text-white text-[10px] font-bold truncate hover:text-gold transition-colors cursor-pointer">{gabinete.email}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Redes Sociais */}
+            {/* Redes Sociais Modernizadas */}
+            {dep.redeSocial?.length > 0 && (
+              <div className="pt-2 px-2">
+                <div className="flex flex-wrap gap-3">
+                  {dep.redeSocial.map((url, i) => (
+                    <a
+                      key={`${url}-${i}`}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-11 h-11 bg-white/5 text-slate-400 rounded-2xl border border-white/10 flex items-center justify-center hover:bg-gold hover:border-gold hover:text-navy hover:translate-y-[-4px] hover:shadow-[0_8px_20px_-6px_rgba(212,175,55,0.4)] transition-all duration-300 group/social"
+                      title={new URL(url).hostname.replace('www.', '')}
+                    >
+                      <div className="group-hover/social:scale-110 transition-transform duration-300">
+                        {getSocialIcon(url)}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+        </aside>
 
-          {dep.redeSocial?.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {dep.redeSocial.map((url, i) => (
-                <a key={`${url}-${i}`} href={url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold rounded-full hover:bg-blue-500/20 transition-all">
-                  <ExternalLink size={12} /> {new URL(url).hostname.replace('www.', '')}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ================================================================ */}
-      {/* TABS NAVIGATION */}
-      {/* ================================================================ */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide border-b border-white/5">
-        <button
-          onClick={() => setActiveTab('resumo')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'resumo' ? 'bg-gold/10 text-gold border border-gold/20' : 'text-slate-400 hover:bg-white/5'}`}
-        >
-          <LayoutDashboard size={18} />
-          Resumo
-        </button>
-        <button
-          onClick={() => setActiveTab('despesas')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'despesas' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-slate-400 hover:bg-white/5'}`}
-        >
-          <Receipt size={18} />
-          Despesas da Cota
-        </button>
-        <button
-          onClick={() => setActiveTab('frentes')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'frentes' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-slate-400 hover:bg-white/5'}`}
-        >
-          <Flag size={18} />
-          Frentes Parlamentares
-        </button>
-        <button
-          onClick={() => setActiveTab('votacoes')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'votacoes' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-slate-400 hover:bg-white/5'}`}
-        >
-          <Vote size={18} />
-          Votações Recentes
-        </button>
-        <button
-          onClick={() => setActiveTab('trabalho')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'trabalho' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-slate-400 hover:bg-white/5'}`}
-        >
-          <FileText size={18} />
-          Trabalho Legislativo
-        </button>
-        <button
-          onClick={() => setActiveTab('discursos')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'discursos' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'text-slate-400 hover:bg-white/5'}`}
-        >
-          <Info size={18} />
-          Discursos
-        </button>
-        <button
-          onClick={() => setActiveTab('trajetoria')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'trajetoria' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'text-slate-400 hover:bg-white/5'}`}
-        >
-          <History size={18} />
-          Trajetória & Bio
-        </button>
-        <button
-          onClick={() => setActiveTab('emendas')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'emendas' ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' : 'text-slate-400 hover:bg-white/5'}`}
-        >
-          <PiggyBank size={18} />
-          Emendas
-        </button>
-      </div>
-
-      {/* ================================================================ */}
-      {/* TABS CONTENT */}
-      {/* ================================================================ */}
-      <div className="pt-2 min-h-[400px]">
-
-        {/* TAB: RESUMO */}
-        {activeTab === 'resumo' && (
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 space-y-12" id="deputado-content-tabs">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
             {/* 1. DISTRIBUIÇÃO DE GASTOS (DESTAQUE TOTAL) */}
-            <div className="md:col-span-2 lg:col-span-3 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 lg:p-10 relative overflow-hidden group/chart h-full min-h-[500px] flex flex-col">
+            <div className="md:col-span-2 lg:col-span-3 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-6 lg:p-10 relative overflow-hidden group/chart h-full min-h-[500px] flex flex-col shadow-2xl">
               <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] group-hover/chart:bg-indigo-500/20 transition-all duration-1000"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent"></div>
 
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-indigo-500/15 rounded-2xl flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/10">
-                    <DollarSign size={28} />
-                  </div>
+                <div className="flex items-center gap-5">
                   <div>
                     <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Distribuição de Gastos</h3>
                     <p className="text-slate-500 text-sm font-medium">Análise proporcional da cota parlamentar em {expenseSelectedYear}</p>
@@ -1308,7 +1409,7 @@ export default function DeputadoDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl transition-all hover:border-indigo-500/40 hover:bg-white/10 group/sel">
+                  <div className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-2xl transition-all hover:border-indigo-500/40 hover:bg-white/10 group/sel shadow-inner">
                     <Calendar size={16} className="text-indigo-400" />
                     <select
                       value={expenseSelectedYear}
@@ -1331,31 +1432,31 @@ export default function DeputadoDetailPage() {
             </div>
 
             {/* 2. EQUIPE DE GABINETE (LATERAL) */}
-            <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 space-y-6 flex flex-col group/equipe">
-              <div className="flex items-center justify-between">
+            <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 space-y-6 flex flex-col group/equipe shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl opacity-0 group-hover/equipe:opacity-100 transition-opacity"></div>
+
+              <div className="flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-purple-500/15 rounded-2xl flex items-center justify-center text-purple-400 border border-purple-500/20">
-                    <Briefcase size={22} />
-                  </div>
+
                   <div>
                     <h3 className="text-white font-black uppercase tracking-tighter text-lg leading-none mb-1">Equipe</h3>
                     <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Assessores ativos</p>
                   </div>
                 </div>
-                <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
-                  <span className="text-purple-400 font-black text-xs">{secretarios?.length || 0}</span>
+                <div className="px-4 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full shadow-lg shadow-purple-500/5">
+                  <span className="text-purple-400 font-black text-sm">{filteredSecretarios?.length || 0}</span>
                 </div>
               </div>
 
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 min-h-0 relative z-10">
                 {loadingSecretarios ? (
                   <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-purple-400 animate-spin" /></div>
-                ) : secretarios && secretarios.length > 0 ? (
-                  <div className="space-y-2.5 overflow-y-auto pr-2 custom-scrollbar max-h-[420px]">
-                    {secretarios.map((sec, i) => (
-                      <div key={`${sec.nome}-${i}`} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-purple-500/30 hover:bg-white/10 transition-all group/item relative overflow-hidden">
+                ) : filteredSecretarios && filteredSecretarios.length > 0 ? (
+                  <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar h-[540px]">
+                    {filteredSecretarios.map((sec, i) => (
+                      <div key={`${sec.nome}-${i}`} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-purple-500/30 hover:bg-white/10 transition-all group/item relative overflow-hidden shadow-sm">
                         <div className="flex justify-between items-start gap-2 mb-1">
-                          <p className="text-white text-sm font-black uppercase truncate flex-1">{sec.nome}</p>
+                          <p className="text-white text-sm font-black uppercase truncate flex-1 group-hover/item:text-purple-400 transition-colors">{sec.nome}</p>
                           <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-black tracking-tighter shadow-sm ${sec.cargo.startsWith('CNE')
                             ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
                             : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20'
@@ -1367,156 +1468,126 @@ export default function DeputadoDetailPage() {
 
                         <div className="flex items-center gap-3">
                           {sec.remuneracao_bruta && sec.remuneracao_bruta > 0 && (
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/15 rounded-lg border border-emerald-500/20" title={`Líquido Aproximado: ${formatCurrency(sec.remuneracao_liquida || 0)}`}>
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/15 rounded-xl border border-emerald-500/20 shadow-sm" title={`Líquido Aproximado: ${formatCurrency(sec.remuneracao_liquida || 0)}`}>
                               <DollarSign size={10} className="text-emerald-400" />
                               <span className="text-[10px] font-black text-emerald-400">{formatCurrency(sec.remuneracao_bruta || 0)}</span>
                             </div>
                           )}
                           <div className="flex items-center gap-1 text-[10px] text-slate-600 font-bold uppercase tracking-tighter">
-                            <MapPin size={10} /> {dep?.ultimoStatus?.siglaUf}
+                            <MapPin size={10} /> {dep?.ultimoStatus.siglaUf}
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="py-12 text-center">
+                  <div className="py-12 text-center bg-white/2 rounded-3xl border border-dashed border-white/10">
                     <Users size={40} className="mx-auto text-slate-800 mb-4" />
-                    <p className="text-slate-500 text-sm italic">Nenhum assessor identificado para este gabinete.</p>
+                    <p className="text-slate-500 text-sm italic">Nenhum assessor identificado.</p>
                   </div>
                 )}
               </div>
 
-              <div className="pt-6 border-t border-white/5 flex items-start gap-3 opacity-60">
-                <Info size={14} className="shrink-0 mt-0.5 text-slate-500" />
-                <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic">
-                  Dados sincronizados via Supabase com base na Lotação declarada no Portal da Transparência.
-                </p>
-              </div>
             </div>
 
             {/* 2b. RECURSOS E BENEFÍCIOS (Cota de 2026) */}
-            <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 space-y-6 flex flex-col group/beneficios">
-              <div className="flex items-center gap-4 mb-10">
-                <div className="w-14 h-14 bg-indigo-500/15 rounded-3xl flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
-                  <Briefcase size={28} />
-                </div>
+            <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 space-y-8 flex flex-col group/beneficios shadow-2xl relative hover:z-50 transition-all duration-300">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
+
+              <div className="flex items-center gap-5 relative z-10">
+
                 <div>
                   <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Benefícios</h3>
                   <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest opacity-60">Recursos do Mandato • 2026</p>
                 </div>
               </div>
 
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 space-y-4 relative z-10">
                 {isLoadingBeneficiosCard ? (
                   <div className="space-y-3 animate-pulse">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="h-14 bg-white/5 rounded-2xl" />)}
+                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-16 bg-white/5 rounded-2xl" />)}
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="p-5 bg-white/[0.03] rounded-3xl border border-white/5 hover:border-indigo-500/20 transition-all flex items-center justify-between group/item">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 group-hover/item:scale-110 transition-transform"><DollarSign size={18} /></div>
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Salário Bruto</span>
+                  <div className="space-y-3">
+                    <div className="p-3.5 bg-white/[0.03] rounded-[1.5rem] border border-white/5 hover:border-indigo-500/30 transition-all flex items-center justify-between group/item shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 group-hover/item:scale-110 transition-transform"><DollarSign size={16} /></div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Salário Bruto</span>
                       </div>
-                      <span className="text-white font-black text-base">{beneficiosCard?.salario_bruto || '—'}</span>
+                      <span className="text-white font-black text-sm">{beneficiosCard?.salario_bruto || '—'}</span>
                     </div>
 
-                    <div className="p-5 bg-white/[0.03] rounded-3xl border border-white/5 hover:border-blue-500/20 transition-all space-y-5 group/item">
-                      <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 group-hover/item:scale-110 transition-transform"><Home size={18} /></div>
+                    <div className="p-3.5 bg-white/[0.03] rounded-[1.5rem] border border-white/5 hover:border-blue-500/30 transition-all space-y-4 group/item shadow-sm">
+                      <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 group-hover/item:scale-110 transition-transform"><Home size={16} /></div>
                           <div className="flex items-center gap-2 group/tip relative">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Moradia</span>
-                            <HelpCircle size={12} className="text-slate-600 hover:text-blue-400 transition-colors cursor-help" />
-                            <div className="absolute bottom-full left-0 mb-3 w-72 p-5 bg-slate-900/98 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl text-[10px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-50 transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
-                              <p className="font-black text-white mb-3 uppercase text-[9px] tracking-[0.2em] border-b border-white/10 pb-2">Regras Oficiais</p>
-                              <span className="block mb-3 text-blue-300 font-bold opacity-80">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Moradia</span>
+                            <HelpCircle size={10} className="text-slate-600 hover:text-blue-400 transition-colors cursor-help" />
+                            <div className="absolute bottom-full left-0 mb-3 w-64 p-4 bg-slate-900/98 backdrop-blur-2xl border border-white/10 rounded-[1.5rem] shadow-2xl text-[9px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-[100] transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
+                              <p className="font-black text-white mb-2 uppercase text-[8px] tracking-[0.2em] border-b border-white/10 pb-1.5">Regras Oficiais</p>
+                              <span className="block mb-2 text-blue-300 font-bold opacity-80">
                                 <strong className="text-white">Imóvel Funcional:</strong> Uso de um dos 447 apartamentos funcionais em Brasília.
                               </span>
                               <span className="block text-slate-400 font-medium">
-                                <strong className="text-white italic">Auxílio-moradia:</strong> Cota de R$ 4.253,00 para quem não ocupa imóvel oficial. Limitado ao valor do aluguel/hotel.
+                                <strong className="text-white italic">Auxílio-moradia:</strong> Cota de R$ 4.253,00 para quem não ocupa imóvel oficial.
                               </span>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="space-y-4">
-                        {/* Linha 1: Imóvel Funcional */}
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Imóvel funcional</span>
-                          <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg ${beneficiosCard?.imovel_funcional?.includes('Faz uso') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-slate-500 border border-white/5 opacity-60'}`}>
+                          <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg ${beneficiosCard?.imovel_funcional?.includes('Faz uso') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm shadow-emerald-500/10' : 'bg-white/5 text-slate-500 border border-white/5 opacity-60'}`}>
                             {beneficiosCard?.imovel_funcional || 'Não informado'}
                           </span>
                         </div>
 
-                        {/* Linha 2: Auxílio-moradia */}
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Auxílio-moradia</span>
                           <div className="flex flex-col items-end">
                             <button
                               onClick={() => beneficiosCard?.auxilio_moradia_mensal && setShowMoradiaModal(true)}
                               className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg flex items-center gap-2 transition-all relative overflow-hidden group/btn
-                                ${beneficiosCard?.auxilio_moradia?.includes('Não recebe')
+                            ${beneficiosCard?.auxilio_moradia?.includes('Não recebe')
                                   ? 'bg-white/5 text-slate-500 border border-white/5 opacity-60'
                                   : 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/5'}
-                                ${beneficiosCard?.auxilio_moradia_mensal
+                            ${beneficiosCard?.auxilio_moradia_mensal
                                   ? 'cursor-pointer hover:bg-blue-500/20 active:scale-95'
                                   : 'cursor-default'}`}>
-
-                              {beneficiosCard?.auxilio_moradia_mensal && (
-                                <span className="absolute inset-0 bg-blue-500/10 animate-pulse pointer-events-none"></span>
-                              )}
-
                               {beneficiosCard?.auxilio_moradia || 'Não informado'}
                               {beneficiosCard?.auxilio_moradia_mensal && <Info size={12} className="opacity-60 group-hover/btn:scale-125 transition-transform" />}
                             </button>
-
-                            {beneficiosCard?.auxilio_moradia_mensal && (
-                              <span className="text-[7px] font-black text-blue-500/50 uppercase tracking-widest mt-1.5 animate-pulse">
-                                Ver Histórico Mensal
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-purple-400/30 transition-all flex items-center justify-between group/passport">
+                    <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5 hover:border-purple-400/30 transition-all flex items-center justify-between group/passport">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400"><Globe size={14} /></div>
-                        <div className="flex items-center gap-2 group/tip relative">
-                          <span className="text-xs font-bold text-slate-400 uppercase">Passaporte</span>
-                          <HelpCircle size={12} className="text-slate-600 hover:text-purple-400 transition-colors cursor-help" />
-                          <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl text-[10px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-50 transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
-                            Deputados têm direito a passaportes diplomáticos para si e para seus dependentes, dispensando vistos em alguns países.
-                          </div>
-                        </div>
+                        <span className="text-xs font-bold text-slate-400 uppercase">Passaporte</span>
                       </div>
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${beneficiosCard?.passaporte_diplomatico?.includes('Possui') ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-white/5 text-slate-500 border border-white/5'}`}>
+                      <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg ${beneficiosCard?.passaporte_diplomatico?.includes('Possui') ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-sm shadow-purple-500/10' : 'bg-white/5 text-slate-500 border border-white/5'}`}>
                         {beneficiosCard?.passaporte_diplomatico || 'Não informado'}
                       </span>
                     </div>
 
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-emerald-400/30 transition-all flex items-center justify-between">
+                    <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5 hover:border-rose-400/30 transition-all flex items-center justify-between group/mission">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400"><Users size={14} /></div>
-                        <span className="text-xs font-bold text-slate-400 uppercase">Gabinete</span>
-                      </div>
-                      <span className="text-white font-bold text-[10px] uppercase text-right max-w-[120px] leading-tight">
-                        {beneficiosCard?.pessoal_gabinete || 'Não informado'}
-                      </span>
-                    </div>
-
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-rose-400/30 transition-all flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-rose-500/10 rounded-lg text-rose-400"><Plane size={14} /></div>
+                        <div className="p-2 bg-rose-500/10 rounded-lg text-rose-400 transition-all"><Plane size={14} /></div>
                         <div className="flex items-center gap-2 group/tip relative">
-                          <span className="text-xs font-bold text-slate-400 uppercase">Missões Oficiais</span>
-                          <HelpCircle size={12} className="text-slate-600 hover:text-rose-400 transition-colors cursor-help" />
-                          <div className="absolute bottom-full right-0 mb-2 w-72 p-4 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-[10px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-50 transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
-                            Diárias para missões oficiais: R$ 842,00 (nacionais), US$ 391,00 (América do Sul) e US$ 428,00 (outros países).
+                          <span className="text-xs font-bold text-slate-400 uppercase">Missões</span>
+                          <HelpCircle size={10} className="text-slate-600 hover:text-rose-400 transition-colors cursor-help" />
+                          <div className="absolute bottom-full left-0 mb-3 w-64 p-4 bg-slate-900/98 backdrop-blur-2xl border border-white/10 rounded-[1.5rem] shadow-2xl text-[9px] leading-relaxed text-slate-300 invisible group-hover/tip:visible z-[100] transition-all duration-300 opacity-0 group-hover/tip:opacity-100 translate-y-2 group-hover/tip:translate-y-0">
+                            <p className="font-black text-white mb-2 uppercase text-[8px] tracking-[0.2em] border-b border-white/10 pb-1.5">Custos de Viagem</p>
+                            <p className="font-medium">
+                              Diárias para missões oficiais: <strong className="text-rose-400">R$ 842,00</strong> (nacionais),
+                              <strong className="text-rose-400"> US$ 391,00</strong> (América do Sul) e
+                              <strong className="text-rose-400"> US$ 428,00</strong> (outros países).
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1524,772 +1595,507 @@ export default function DeputadoDetailPage() {
                         {beneficiosCard?.viagens_missao || '0'}
                       </span>
                     </div>
+
+                    <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-400/30 transition-all flex items-center justify-between group/office">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-500/10 rounded-lg text-amber-400"><Users size={14} /></div>
+                        <span className="text-xs font-bold text-slate-400 uppercase">Gabinete</span>
+                      </div>
+                      <span className="text-white font-black text-[10px] text-right leading-tight max-w-[140px]">
+                        {beneficiosCard?.pessoal_gabinete || 'Não informado'}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
+            </div>
 
-              <div className="pt-4 border-t border-white/5 opacity-50">
-                <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic text-center">
-                  Informações extraídas do Portal da Transparência.
-                </p>
+            {/* 3. COMISSÕES E ÓRGÃOS (LATERAL) */}
+            <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 space-y-8 flex flex-col group/comis h-full shadow-2xl relative overflow-hidden">
+              <div className="absolute bottom-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl opacity-0 group-hover/comis:opacity-100 transition-opacity"></div>
+
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h3 className="text-white font-black uppercase tracking-tighter text-lg leading-none mb-1">Comissões</h3>
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Atuação ativa</p>
+                  </div>
+                </div>
+                <div className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full shadow-lg shadow-emerald-500/5">
+                  <span className="text-emerald-400 font-black text-sm">{orgaos.length}</span>
+                </div>
+              </div>
+
+              <div className="flex-1 min-h-0 relative z-10">
+                {loadingOrgaos ? (
+                  <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-emerald-400 animate-spin" /></div>
+                ) : orgaos.length > 0 ? (
+                  <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar h-[480px]">
+                    {orgaos.map((orgao) => (
+                      <div key={orgao.idOrgao} className="p-5 bg-white/5 rounded-[1.5rem] border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all space-y-3 group/item shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20 group-hover/item:bg-emerald-500/30 transition-colors">{orgao.siglaOrgao}</span>
+                          <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">{orgao.titulo}</span>
+                        </div>
+                        <p className="text-slate-200 text-[13px] font-bold leading-relaxed group-hover:text-white transition-colors">{orgao.nomePublicacao || orgao.nomeOrgao}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center bg-white/2 rounded-3xl border border-dashed border-white/10 opacity-50">
+                    <p className="text-slate-500 text-sm italic">Nenhuma participação identificada.</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* 3. PRODUÇÃO LEGISLATIVA (DESTAQUE) */}
-            <div className="md:col-span-2 lg:col-span-2 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 lg:p-10 relative overflow-hidden group/prod flex flex-col h-full">
+            {/* 4. PRODUÇÃO LEGISLATIVA (DESTAQUE) */}
+            <div className="md:col-span-2 lg:col-span-3 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 lg:p-10 relative overflow-hidden group/prod flex flex-col h-full shadow-2xl">
               <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-500/5 rounded-full blur-[80px] group-hover/prod:bg-blue-500/10 transition-all duration-700"></div>
+              <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-transparent via-gold-500/20 to-transparent opacity-30"></div>
 
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-blue-500/15 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/10">
-                    <FileText size={28} />
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">Produção Legislativa</h3>
-                      <a 
-                        href={`https://www.camara.leg.br/deputados/${deputadoId}?ano=${proposicaoYear}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-all border border-blue-500/20 group/link"
-                        title={`Ver todas as propostas de ${proposicaoYear} no Portal da Câmara`}
-                      >
-                        <ExternalLink size={14} className="group-hover/link:scale-110 transition-transform" />
-                      </a>
-                    </div>
-                    <p className="text-slate-500 text-sm font-medium mt-1">Histórico acumulado de proposições e atos</p>
-                  </div>
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10 mb-8">
+                <div className="flex flex-col">
+                  <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2">Produção Legislativa</h3>
+                  <p className="text-slate-500 text-sm font-medium">Histórico acumulado de proposições e atos</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* Seletor de Ano */}
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl transition-all hover:border-blue-500/40 hover:bg-white/10 group/sel">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-2xl transition-all hover:border-blue-500/40 hover:bg-white/10 group/sel shadow-inner">
                     <Calendar size={16} className="text-blue-400" />
                     <select
                       value={proposicaoYear}
                       onChange={(e) => setProposicaoYear(parseInt(e.target.value))}
                       className="bg-transparent border-none text-sm font-bold text-white focus:outline-none appearance-none cursor-pointer pr-2"
                     >
-                      {YEARS.map(y => (
-                        <option key={`prop-year-${y}`} value={y} className="bg-navy">
-                          {y}
-                        </option>
-                      ))}
+                      {YEARS.map(y => <option key={`prop-year-${y}`} value={y} className="bg-navy">{y}</option>)}
                     </select>
                     <ChevronDown size={14} className="text-slate-500 group-hover/sel:text-white transition-colors" />
                   </div>
+                  <a
+                    href={`https://www.camara.leg.br/deputados/${deputadoId}?ano=${proposicaoYear}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-11 h-11 flex items-center justify-center bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl transition-all border border-blue-500/20 group/link shadow-sm"
+                    title={`Ver todas as propostas no Portal da Câmara`}
+                  >
+                    <ExternalLink size={18} className="group-hover/link:scale-110 transition-transform" />
+                  </a>
+                </div>
+              </div>
 
-                  <div className="px-5 py-4 bg-gold/15 border border-gold/20 rounded-[2rem] flex flex-col items-center justify-center shadow-xl shadow-gold/5 min-w-[110px]">
-                    <span className="text-gold/60 text-[9px] font-black uppercase tracking-widest mb-1">Totais Oficiais</span>
-                    <span className="text-gold text-3xl font-black tracking-tighter leading-none">{proposicaoTotalsFiltered?.total || 0}</span>
+              <div className="flex items-center gap-3 flex-nowrap overflow-x-auto no-scrollbar pb-4 relative z-10">
+                {/* Totais */}
+                <div className="flex items-center gap-3 px-4 py-3 bg-gold/10 border border-gold/20 rounded-2xl whitespace-nowrap group/stat transition-all hover:bg-gold/20">
+                  <FileCheck size={18} className="text-gold" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-gold/60 uppercase tracking-widest leading-none mb-1">Autoria</span>
+                    <span className="text-xl font-black text-white leading-none tracking-tighter">{proposicaoTotalsFiltered?.total || 0}</span>
                   </div>
+                </div>
 
-                  <div className="px-5 py-4 bg-blue-500/15 border border-blue-500/20 rounded-[2rem] flex flex-col items-center justify-center shadow-xl shadow-blue-500/5 min-w-[110px]">
-                    <span className="text-blue-400/60 text-[9px] font-black uppercase tracking-widest mb-1">Relatorias</span>
-                    <span className="text-blue-400 text-3xl font-black tracking-tighter leading-none">{proposicaoTotalsFiltered?.relatadas || 0}</span>
+                {/* Relatorias */}
+                <div className="flex items-center gap-3 px-4 py-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl whitespace-nowrap group/stat transition-all hover:bg-blue-500/20">
+                  <Gavel size={18} className="text-blue-400" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-blue-400/60 uppercase tracking-widest leading-none mb-1">Relatorias</span>
+                    <span className="text-xl font-black text-white leading-none tracking-tighter">{proposicaoTotalsFiltered?.relatadas || 0}</span>
+                  </div>
+                </div>
+
+                {/* Atos Processuais */}
+                <div className="flex items-center gap-3 px-4 py-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl whitespace-nowrap group/stat transition-all hover:bg-indigo-500/20">
+                  <History size={18} className="text-indigo-400" />
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-[8px] font-black text-indigo-400/60 uppercase tracking-widest leading-none">Atos Proc.</span>
+                      <span className="text-[7px] font-bold text-slate-500 uppercase tracking-tighter opacity-40">Burocracia</span>
+                    </div>
+                    <span className="text-xl font-black text-white leading-none tracking-tighter">
+                      {(proposicaoTotalsFiltered?.total || 0) - (proposicaoTotalsFiltered?.apiTotal || 0)}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[420px] relative z-10">
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar flex-1 relative z-10">
                 {loadingTotalsFiltered ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 animate-pulse">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="h-14 bg-white/5 rounded-2xl" />)}
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="h-16 bg-white/5 rounded-2xl" />)}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {Object.entries(proposicaoTotalsFiltered?.counts || {})
                       .sort(([, a], [, b]) => b - a)
                       .map(([tipo, count]) => {
                         const nomeCompleto = PROPOSICOES_MAP[tipo] || `Sigla: ${tipo}`;
                         return (
-                          <div key={tipo} className="group flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-[1.5rem] hover:bg-white/10 hover:border-blue-500/30 transition-all duration-300">
+                          <div key={tipo} className="group flex items-center justify-between p-5 bg-white/5 border border-white/5 rounded-[1.5rem] hover:bg-white/10 hover:border-blue-500/30 transition-all duration-300 shadow-sm">
                             <div className="flex flex-col">
-                              <span className="text-white font-black text-xs uppercase tracking-widest">{tipo}</span>
-                              <span className="text-slate-600 text-[9px] font-bold uppercase truncate max-w-[100px]" title={nomeCompleto}>{nomeCompleto}</span>
+                              <span className="text-white font-black text-xs uppercase tracking-widest group-hover:text-blue-400 transition-colors">{tipo}</span>
+                              <span className="text-slate-600 text-[9px] font-bold uppercase truncate max-w-[120px]" title={nomeCompleto}>{nomeCompleto}</span>
                             </div>
-                            <span className="text-white font-black text-xl tracking-tighter">{count}</span>
+                            <span className="text-white font-black text-2xl tracking-tighter">{count}</span>
                           </div>
                         );
                       })}
-
-                    {/* Atos Administrativos/Processuais (Diferença para o Site) */}
-                    {(proposicaoTotalsFiltered?.total || 0) > (proposicoesData?.totalItems || 0) && (
-                      <div className="group flex items-center justify-between p-4 bg-blue-500/5 border border-blue-500/10 rounded-[1.5rem] hover:bg-blue-500/10 transition-all duration-300 border-dashed">
-                        <div className="flex flex-col">
-                          <span className="text-blue-400 font-black text-xs uppercase tracking-widest">Atos Proc.</span>
-                          <span className="text-slate-600 text-[9px] font-bold uppercase">Movimentações & Burocracia</span>
-                        </div>
-                        <span className="text-blue-400 font-black text-xl tracking-tighter">
-                          {(proposicaoTotalsFiltered?.total || 0) - (proposicoesData?.totalItems || 0)}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
 
-              <div className="mt-8 pt-6 border-t border-white/5 flex items-start gap-4 bg-white/[0.02] p-6 rounded-[2rem]">
-                <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 shrink-0">
-                  <Info size={18} />
+              <div className="mt-8 pt-6 border-t border-white/5 flex items-start gap-5 bg-white/[0.03] p-6 rounded-[2rem] relative z-10">
+                <div className="w-12 h-12 bg-indigo-500/15 rounded-[1rem] flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
+                  <Info size={24} />
                 </div>
-                <div className="space-y-1">
-                  <h4 className="text-white font-black uppercase text-[10px] tracking-widest">Por que os totais divergem?</h4>
+                <div className="space-y-1.5 flex-1">
+                  <h4 className="text-white font-black uppercase text-xs tracking-widest flex items-center gap-2">
+                    Por que os totais divergem?
+                    <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded-md text-[9px]">Exclusivo Portal Câmara</span>
+                  </h4>
                   <p className="text-slate-400 text-[10px] font-medium leading-relaxed italic">
-                    A diferença de <span className="text-blue-400 font-black">{(proposicaoTotalsFiltered?.total || 0) - (proposicoesData?.totalItems || 0)} atos</span> refere-se a formalidades processuais e administrativas (como retirada de pauta, requerimentos formais ou correções de texto). 
-                    A lista de Projetos exibe apenas proposições de mérito reais (Leis, PECs, etc), enquanto o total da Câmara engloba toda a movimentação burocrática parlamentar.
+                    A diferença de <span className="text-white font-bold">{(proposicaoTotalsFiltered?.total || 0) - (proposicaoTotalsFiltered?.apiTotal || 0)} atos</span> refere-se a formalidades processuais e administrativas (como retirada de pauta, requerimentos formais ou correções de texto).
+                    A lista de <span className="text-white font-bold">Projetos</span> exibe apenas proposições de mérito reais (Leis, PECs, etc), enquanto o total da Câmara engloba toda a movimentação burocrática parlamentar.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* 4. COMISSÕES E ÓRGÃOS (LATERAL) */}
-            <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 space-y-6 flex flex-col group/comis h-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-emerald-500/15 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-                    <Gavel size={22} />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-black uppercase tracking-tighter text-lg leading-none mb-1">Comissões</h3>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Atuação ativa</p>
-                  </div>
-                </div>
-                <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                  <span className="text-emerald-400 font-black text-xs">{orgaos.length}</span>
-                </div>
-              </div>
-
-              <div className="flex-1 min-h-0">
-                {loadingOrgaos ? (
-                  <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-emerald-400 animate-spin" /></div>
-                ) : orgaos.length > 0 ? (
-                  <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar max-h-[420px]">
-                    {orgaos.map((orgao) => (
-                      <div key={orgao.idOrgao} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20">{orgao.siglaOrgao}</span>
-                          <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">{orgao.titulo}</span>
-                        </div>
-                        <p className="text-slate-200 text-xs font-bold leading-snug">{orgao.nomePublicacao || orgao.nomeOrgao}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-slate-600 italic text-sm">Nenhuma participação ativa identificada.</div>
-                )}
-              </div>
-            </div>
-
-            {/* 5. BIOGRAFIA E HISTÓRICO (DESTAQUE) */}
-            <div className="md:col-span-2 lg:col-span-2 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 lg:p-10 relative overflow-hidden group/bio h-full">
-              <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-rose-500/5 rounded-full blur-[80px]"></div>
-
-              <div className="flex items-center gap-4 mb-10">
-                <div className="w-14 h-14 bg-rose-500/15 rounded-2xl flex items-center justify-center text-rose-400 border border-rose-500/20 shadow-lg shadow-rose-500/10">
-                  <GraduationCap size={28} />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Biografia & Trajetória</h3>
-                  <p className="text-slate-500 text-sm font-medium">Histórico profissional e acadêmico declarado</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                {/* Ocupações */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
-                    Ocupações Anteriores
-                  </div>
-                  <div className="space-y-3 max-h-[350px] overflow-y-auto pr-3 custom-scrollbar">
-                    {loadingOcupacoes ? (
-                      <Loader2 className="w-6 h-6 animate-spin text-rose-400 mx-auto" />
-                    ) : ocupacoesData && ocupacoesData.length > 0 ? (
-                      ocupacoesData.map((oc, i) => (
-                        <div key={`ocupacao-${oc.titulo}-${i}`} className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-rose-500/20 transition-all space-y-3">
-                          <p className="text-white text-sm font-black uppercase tracking-tight leading-tight">{oc.titulo}</p>
-                          <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
-                            <span className="flex items-center gap-1.5"><Building2 size={12} className="text-rose-400" /> {oc.entidade}</span>
-                            <span className="flex items-center gap-1.5"><MapPin size={12} /> {oc.entidadeUF || oc.entidadePais}</span>
-                          </div>
-                          <div className="inline-block px-3 py-1 bg-white/5 rounded-lg text-slate-400 text-[10px] font-black uppercase tracking-tighter">
-                            {oc.anoInicio} → {oc.anoFim ? oc.anoFim : 'Atual'}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-slate-600 text-sm italic py-4">Nenhuma ocupação declarada no histórico.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Formação */}
-                <div className="space-y-8">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                      Escolaridade
-                    </div>
-                    <div className="p-6 bg-white/5 rounded-[1.5rem] border border-white/5 border-l-rose-500/40 border-l-4">
-                      <p className="text-white text-lg font-black tracking-tight">{dep.escolaridade}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                      Profissões Declaradas
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {profissoesData && profissoesData.length > 0 ? (
-                        profissoesData.map((pr) => (
-                          <span key={pr.id} className="px-4 py-2 bg-blue-500/10 text-blue-400 text-[11px] font-black uppercase tracking-tight rounded-2xl border border-blue-500/20 hover:bg-blue-500/20 transition-all cursor-default">
-                            {pr.titulo}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-slate-600 text-xs italic">Sem informações específicas.</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
           </div>
-        )}
 
-        {/* TAB: DESPESAS */}
-        {activeTab === 'despesas' && (
-          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center text-gold">
-                  <Receipt size={22} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white tracking-tight uppercase">Despesas da Cota</h2>
-                  <p className="text-slate-500 text-xs italic">Cota para Exercício da Atividade Parlamentar (CEAP)</p>
-                </div>
-              </div>
 
-              {(totalAnualCota > 0 || loadingTabAggregatedExpenses) && (
-                <div className="px-5 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-4 shadow-lg shadow-emerald-500/5 transition-all hover:bg-emerald-500/15 min-w-[200px]">
-                  <div className="flex-1">
-                    <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest block mb-1">Total Anual ({despesaYear})</span>
-                    {loadingTabAggregatedExpenses ? (
-                      <div className="h-7 w-32 bg-emerald-500/10 animate-pulse rounded-lg"></div>
-                    ) : (
-                      <span className="text-2xl font-black text-emerald-400 leading-none">{formatCurrency(totalAnualCota)}</span>
-                    )}
+
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-6 scrollbar-hide border-b border-white/5 no-scrollbar">
+            {[
+              { id: 'despesas', label: 'Despesas', icon: Receipt, color: 'emerald' },
+              { id: 'frentes', label: 'Frentes', icon: Flag, color: 'amber' },
+              { id: 'votacoes', label: 'Votações', icon: Vote, color: 'blue' },
+              { id: 'trabalho', label: 'Trabalho', icon: FileText, color: 'indigo' },
+              { id: 'discursos', label: 'Discursos', icon: Info, color: 'purple' },
+              { id: 'emendas', label: 'Emendas', icon: PiggyBank, color: 'emerald' },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all whitespace-nowrap shadow-sm active:scale-95 border
+                ${isActive
+                      ? `bg-${tab.color}-500/10 text-${tab.color}-400 border-${tab.color}-500/30 shadow-${tab.color}-500/5`
+                      : 'text-slate-500 hover:bg-white/5 border-transparent'}`}
+                >
+                  <Icon size={16} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ================================================================ */}
+          {/* TABS CONTENT */}
+          {/* ================================================================ */}
+          <div className="pt-2 min-h-[400px]">
+
+            {/* Conteúdo das Abas Remanejado */}
+            {/* TAB: DESPESAS */}
+            {activeTab === 'despesas' && (
+              <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white tracking-tight uppercase">Despesas da Cota</h2>
+                      <p className="text-slate-500 text-xs italic">Cota para Exercício da Atividade Parlamentar (CEAP)</p>
+                    </div>
                   </div>
-                  {!loadingTabAggregatedExpenses && (
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                      <DollarSign size={16} />
+
+                  {(totalAnualCota > 0 || loadingTabAggregatedExpenses) && (
+                    <div className="px-5 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-4 shadow-lg shadow-emerald-500/5 transition-all hover:bg-emerald-500/15 min-w-[200px]">
+                      <div className="flex-1">
+                        <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest block mb-1">Total Anual ({despesaYear})</span>
+                        {loadingTabAggregatedExpenses ? (
+                          <div className="h-7 w-32 bg-emerald-500/10 animate-pulse rounded-lg"></div>
+                        ) : (
+                          <span className="text-2xl font-black text-emerald-400 leading-none">{formatCurrency(totalAnualCota)}</span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            {/* FILTROS DE DESPESAS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative overflow-hidden group/filters">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover/filters:bg-gold/10 transition-all"></div>
+                {/* FILTROS DE DESPESAS */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative overflow-hidden group/filters">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover/filters:bg-gold/10 transition-all"></div>
 
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-gold shadow-inner">
-                  <Calendar size={18} />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
-                    Ano Fiscal
-                  </label>
-                  <select
-                    value={despesaYear}
-                    onChange={(e) => { setDespesaYear(parseInt(e.target.value)); setDespesaPage(1); }}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all hover:bg-white/10 cursor-pointer appearance-none"
-                  >
-                    {YEARS.map(y => <option key={`exp-y-${y}`} value={y} className="bg-navy">{y}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-blue-400 shadow-inner">
-                  <History size={18} />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
-                    Mês de Referência
-                  </label>
-                  <select
-                    value={despesaMonth}
-                    onChange={(e) => { setDespesaMonth(e.target.value); setDespesaPage(1); }}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all hover:bg-white/10 cursor-pointer appearance-none"
-                  >
-                    {MONTHS.map(m => <option key={`exp-m-${m.value}`} value={m.value} className="bg-navy">{m.label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end">
-                {fetchingDesp && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold text-xs font-bold rounded-xl border border-gold/20 animate-pulse">
-                    <Loader2 size={14} className="animate-spin" />
-                    SINCROZINANDO DADOS...
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {loadingDesp ? (
-              <TableSkeleton rows={10} />
-            ) : despesas.length > 0 ? (
-              <div className="bg-slate-card/60 backdrop-blur-sm border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
-                <DataTable
-                  columns={despesaColumns}
-                  data={despesas}
-                  getRowId={(row) => String(row.codDocumento)}
-                />
-
-                <div className="p-6 border-t border-white/5">
-                  <Pagination
-                    page={despesaPage}
-                    totalPaginas={totalPaginasDespesas}
-                    hasNext={hasNextDesp}
-                    itensPerPage={despesaItens}
-                    onItensPerPageChange={(n) => { setDespesaItens(n); setDespesaPage(1); }}
-                    onPageChange={(p) => {
-                      setDespesaPage(p);
-                      const element = document.getElementById('deputado-content-tabs');
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth' });
-                      } else {
-                        window.scrollTo({ top: 500, behavior: 'smooth' });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="py-20 text-center bg-slate-card/20 rounded-[3rem] border border-dashed border-white/10 group hover:border-gold/20 transition-all">
-                <Receipt className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:scale-110 group-hover:text-gold/20 transition-all duration-500" />
-                <p className="text-white font-black text-xl uppercase tracking-tighter">Sem registros para este período</p>
-                <p className="text-slate-600 text-sm mt-2 max-w-xs mx-auto">
-                  A Câmara ainda não processou despesas para o mês de {MONTHS.find(m => m.value === despesaMonth)?.label} de {despesaYear}.
-                </p>
-                <button
-                  onClick={() => { setDespesaMonth('all'); setDespesaPage(1); }}
-                  className="mt-6 px-6 py-2.5 bg-white/5 text-slate-400 text-xs font-bold rounded-xl border border-white/10 hover:border-gold/30 hover:text-gold transition-all"
-                >
-                  VER TODO O ANO DE {despesaYear}
-                </button>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* TAB: FRENTES */}
-        {activeTab === 'frentes' && (
-          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400">
-                  <Flag size={22} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">Frentes Parlamentares</h2>
-                  <p className="text-slate-500 text-xs">Bancadas e frentes das quais faz parte</p>
-                </div>
-              </div>
-              <span className="px-4 py-1.5 bg-amber-500/10 text-amber-400 text-sm font-black rounded-full">
-                {loadingFrentes ? '...' : frentes.length} frentes
-              </span>
-            </div>
-
-            {/* Search frentes */}
-            {frentes.length > 8 && (
-              <div className="relative max-w-md">
-                <div className="absolute inset-y-0 left-3 flex items-center text-slate-500">
-                  <Search size={16} />
-                </div>
-                <input
-                  type="text"
-                  value={frentesSearch}
-                  onChange={(e) => setFrentesSearch(e.target.value)}
-                  placeholder="Buscar frente parlamentar..."
-                  className="w-full bg-navy border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
-                />
-              </div>
-            )}
-
-            {loadingFrentes && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
-              </div>
-            )}
-
-            {!loadingFrentes && filteredFrentes.length > 0 && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {displayedFrentes.map((frente) => (
-                    <div
-                      key={frente.id}
-                      className="p-4 bg-slate-card border border-white/5 rounded-2xl space-y-2 hover:border-amber-500/20 transition-all group"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-400 shrink-0 group-hover:scale-110 transition-transform">
-                          <Flag size={14} />
-                        </div>
-                        <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[10px] font-bold rounded">
-                          Leg. {frente.idLegislatura}
-                        </span>
-                      </div>
-                      <p className="text-slate-300 text-xs font-medium leading-tight">{frente.titulo}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-gold shadow-inner">
+                      <Calendar size={18} />
                     </div>
-                  ))}
-                </div>
-
-                {filteredFrentes.length > 12 && (
-                  <button
-                    onClick={() => setShowAllFrentes(!showAllFrentes)}
-                    className="mx-auto flex items-center gap-2 px-6 py-2.5 bg-amber-500/10 text-amber-400 text-sm font-bold rounded-xl hover:bg-amber-500/20 transition-all cursor-pointer"
-                  >
-                    {showAllFrentes ? (
-                      <>
-                        <ChevronUp size={16} /> Mostrar menos
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown size={16} /> Ver todas as {filteredFrentes.length} frentes
-                      </>
-                    )}
-                  </button>
-                )}
-              </>
-            )}
-
-            {!loadingFrentes && filteredFrentes.length === 0 && (
-              <div className="py-12 text-center bg-slate-card/10 rounded-3xl border border-dashed border-white/10">
-                <Flag className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-white font-bold">
-                  {frentesSearch ? 'Nenhuma frente encontrada' : 'Nenhuma frente parlamentar'}
-                </p>
-                <p className="text-slate-500 text-sm mt-1">
-                  {frentesSearch ? 'Tente outro termo de busca.' : 'Este deputado não integra frentes parlamentares registradas.'}
-                </p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* TAB: VOTACOES */}
-        {activeTab === 'votacoes' && (
-          <section id="votacoes-section" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400">
-                <Vote size={22} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Votações Recentes</h2>
-                <p className="text-slate-500 text-xs">Últimas votações do Plenário e Comissões — clique para ver o voto do deputado</p>
-              </div>
-            </div>
-
-            {/* FILTROS DE PERÍODO */}
-            <div className="flex flex-wrap items-center gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-md">
-              <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-blue-400" />
-                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Ano:</span>
-                <select
-                  value={votacaoYear}
-                  onChange={(e) => { setVotacaoYear(e.target.value); setVotacaoPage(1); }}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer hover:bg-white/10"
-                >
-                  {YEARS.map(y => <option key={y} value={y} className="bg-navy">{y}</option>)}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <History size={14} className="text-gold" />
-                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Mês:</span>
-                <select
-                  value={votacaoMonth}
-                  onChange={(e) => { setVotacaoMonth(e.target.value); setVotacaoPage(1); }}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer hover:bg-white/10"
-                >
-                  {MONTHS.map(m => <option key={m.value} value={m.value} className="bg-navy">{m.label}</option>)}
-                </select>
-              </div>
-
-              <div className="ml-auto">
-                <span className="px-3 py-1.5 bg-blue-500/10 text-blue-400 text-[10px] font-black rounded-full border border-blue-500/20 uppercase tracking-tighter">
-                  Período: {votacaoYear} {votacaoMonth !== 'all' ? `/ ${MONTHS.find(m => m.value === votacaoMonth)?.label}` : ''}
-                </span>
-              </div>
-            </div>
-
-            {loadingVotacoes && <TableSkeleton rows={10} />}
-
-            {!loadingVotacoes && votacoes.length > 0 && (
-              <DataTable
-                columns={columns}
-                data={votacoes}
-                getRowId={(row) => String(row.id)}
-                getRowCanExpand={() => true}
-                renderSubComponent={({ row }) => (
-                  <VotacaoDetailExpansion
-                    row={row}
-                    deputadoId={deputadoId}
-                    siglaPartido={dep?.ultimoStatus.siglaPartido}
-                  />
-                )}
-              />
-            )}
-
-            {!loadingVotacoes && votacoes.length === 0 && (
-              <div className="py-12 text-center bg-slate-card/10 rounded-3xl border border-dashed border-white/10">
-                <Vote className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-white font-bold">Nenhuma votação encontrada</p>
-                <p className="text-slate-500 text-sm mt-1">Não foram encontradas votações para este período.</p>
-              </div>
-            )}
-
-            <Pagination
-              page={votacaoPage}
-              totalPaginas={totalPaginasVotacoes}
-              hasNext={hasNextVotacoes}
-              itensPerPage={votacaoItens}
-              onItensPerPageChange={(n) => { setVotacaoItens(n); setVotacaoPage(1); }}
-              onPageChange={(p) => {
-                setVotacaoPage(p);
-                const element = document.getElementById('votacoes-section');
-                if (element) {
-                  const yOffset = -100;
-                  const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                  window.scrollTo({ top: y, behavior: 'smooth' });
-                }
-              }}
-            />
-          </section>
-        )}
-
-        {/* TAB: TRABALHO LEGISLATIVO */}
-        {activeTab === 'trabalho' && (
-          <section id="trabalho-section" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400">
-                <FileText size={22} />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-white flex items-center gap-3">
-                  Trabalho Legislativo
-                </h3>
-                <p className="text-slate-500 text-xs">Projetos de lei, emendas e outras proposições de autoria do parlamentar</p>
-              </div>
-            </div>
-
-            {/* FILTROS DE TRABALHO LEGISLATIVO */}
-            <div className="flex flex-wrap items-center gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-md">
-              <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-indigo-400" />
-                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Ano:</span>
-                <select
-                  value={proposicaoYear}
-                  onChange={(e) => { setProposicaoYear(parseInt(e.target.value)); setProposicaoPage(1); }}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all cursor-pointer hover:bg-white/10"
-                >
-                  {YEARS.map(y => <option key={`prop-year-${y}`} value={y} className="bg-navy">{y}</option>)}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <History size={14} className="text-gold" />
-                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Mês:</span>
-                <select
-                  value={proposicaoMonth}
-                  onChange={(e) => { setProposicaoMonth(e.target.value); setProposicaoPage(1); }}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all cursor-pointer hover:bg-white/10"
-                >
-                  {MONTHS.map(m => <option key={`prop-month-${m.value}`} value={m.value} className="bg-navy">{m.label}</option>)}
-                </select>
-              </div>
-
-              <div className="ml-auto">
-                <span className="px-3 py-1.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-black rounded-full border border-indigo-500/20 uppercase tracking-tighter shadow-sm shadow-indigo-500/5">
-                  {loadingProposicoes ? '...' : `${displayCount} resultados`}
-                </span>
-              </div>
-            </div>
-
-            {loadingProposicoes && <TableSkeleton rows={10} />}
-
-            {!loadingProposicoes && proposicoesData?.items && proposicoesData.items.length > 0 && (
-              <div className="bg-slate-card border border-white/5 rounded-[2rem] overflow-hidden">
-                <DataTable
-                  columns={proposicaoColumns}
-                  data={displayProposicoes}
-                  getRowCanExpand={() => true}
-                  renderSubComponent={({ row }) => <ProposicaoDetailExpansion row={row} />}
-                  getRowId={(row) => String(row.id)}
-                />
-                <div className="p-6 border-t border-white/5">
-                  <Pagination
-                    page={proposicaoPage}
-                    totalPaginas={totalPaginasProposicoes}
-                    hasNext={hasNextProposicoes}
-                    itensPerPage={proposicaoItens}
-                    onItensPerPageChange={(n) => { setProposicaoItens(n); setProposicaoPage(1); }}
-                    onPageChange={(p) => {
-                      setProposicaoPage(p);
-                      const element = document.getElementById('trabalho-section');
-                      if (element) {
-                        const yOffset = -100;
-                        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                        window.scrollTo({ top: y, behavior: 'smooth' });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {!loadingProposicoes && proposicoesData?.items.length === 0 && (
-              <div className="py-12 text-center bg-slate-card/10 rounded-3xl border border-dashed border-white/10">
-                <FileText className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-white font-bold">Nenhuma proposição encontrada</p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* TAB: DISCURSOS */}
-        {activeTab === 'discursos' && (
-          <section id="discursos-section" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400">
-                <Info size={22} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Pronunciamentos & Discursos</h2>
-                <p className="text-slate-500 text-xs">Registros de falas do parlamentar em plenário e comissões</p>
-              </div>
-            </div>
-
-            {/* FILTROS DE DISCURSOS */}
-            <div className="flex flex-wrap items-center gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-md">
-              <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-purple-400" />
-                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Ano:</span>
-                <select
-                  value={discursoYear}
-                  onChange={(e) => { setDiscursoYear(parseInt(e.target.value)); setDiscursoPage(1); }}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer hover:bg-white/10"
-                >
-                  {YEARS.map(y => <option key={`year-${y}`} value={y} className="bg-navy">{y}</option>)}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <History size={14} className="text-gold" />
-                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Mês:</span>
-                <select
-                  value={discursoMonth}
-                  onChange={(e) => { setDiscursoMonth(e.target.value); setDiscursoPage(1); }}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer hover:bg-white/10"
-                >
-                  {MONTHS.map(m => <option key={`month-${m.value}`} value={m.value} className="bg-navy">{m.label}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {loadingDiscursos && <TableSkeleton rows={5} />}
-
-            {!loadingDiscursos && discursosData?.items && discursosData.items.length > 0 && (
-              <div className="space-y-4">
-                {discursosData.items.map((disc, idx) => (
-                  <div key={`discurso-${disc.dataHoraInicio}-${idx}`} className="bg-slate-card border border-white/5 rounded-[2rem] hover:border-purple-500/20 transition-all group overflow-hidden flex flex-col">
-                    <div className="p-6 md:p-8 space-y-4">
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div className="space-y-3 flex-1 min-w-[280px]">
-                          <div className="flex items-center gap-3">
-                            <div className="px-3 py-1 bg-purple-500/10 text-purple-400 text-[10px] font-black rounded-lg border border-purple-500/20 uppercase tracking-wider">
-                              {disc.tipoDiscurso}
-                            </div>
-                            <span className="text-slate-500 text-[10px] font-bold flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md">
-                              <Calendar size={12} className="text-purple-400/50" />
-                              {new Date(disc.dataHoraInicio).toLocaleDateString('pt-BR')} às {new Date(disc.dataHoraInicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                            <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded-md border border-indigo-500/20">
-                              {disc.faseEvento.titulo}
-                            </span>
-                          </div>
-
-                          <div className="space-y-2">
-                            <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                              <FileText size={12} className="text-purple-400" /> Sumário do Pronunciamento
-                            </h4>
-                            <p className="text-white text-sm md:text-base font-medium leading-relaxed">
-                              {disc.sumario || 'O parlamentar fez uso da palavra durante a sessão.'}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2 pt-2">
-                            {(disc.keywords?.split(',') || []).slice(0, 8).map((kw, kidx) => (
-                              <span key={`disc-${idx}-kw-${kidx}`} className="px-2 py-0.5 bg-white/5 text-slate-400 text-[9px] font-medium rounded border border-white/5 hover:border-purple-500/20 hover:text-purple-400 transition-all cursor-default">
-                                {kw.trim()}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-2 shrink-0">
-                          {disc.urlTexto && (
-                            <a href={disc.urlTexto} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-2 px-5 py-3 bg-purple-500/10 text-purple-400 text-[11px] font-black rounded-2xl border border-purple-500/20 hover:bg-purple-500/20 transition-all shadow-lg active:scale-95">
-                              VER DIÁRIO OFICIAL <ExternalLink size={14} />
-                            </a>
-                          )}
-                          <div className="flex items-center gap-2 justify-center">
-                            {disc.urlAudio && <a href={disc.urlAudio} target="_blank" rel="noopener noreferrer" className="flex-1 flex justify-center p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all" title="Ouvir Áudio"><Mic2 size={18} /></a>}
-                            {disc.urlVideo && <a href={disc.urlVideo} target="_blank" rel="noopener noreferrer" className="flex-1 flex justify-center p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all" title="Ver Vídeo"><Play size={18} /></a>}
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => setExpandedDiscurso(expandedDiscurso === idx ? null : idx)}
-                        className="w-full py-4 bg-navy/40 border border-white/5 rounded-[1.5rem] text-slate-400 hover:text-purple-400 hover:border-purple-500/20 flex items-center justify-center gap-2 transition-all font-bold group/btn active:scale-[0.99]"
+                    <div className="flex-1 space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                        Ano Fiscal
+                      </label>
+                      <select
+                        value={despesaYear}
+                        onChange={(e) => { setDespesaYear(parseInt(e.target.value)); setDespesaPage(1); }}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all hover:bg-white/10 cursor-pointer appearance-none"
                       >
-                        {expandedDiscurso === idx ? 'Recolher Transcrição' : 'Ler Transcrição Completa'}
-                        <ChevronDown size={18} className={`transition-transform duration-300 ${expandedDiscurso === idx ? 'rotate-180' : ''}`} />
-                      </button>
+                        {YEARS.map(y => <option key={`exp-y-${y}`} value={y} className="bg-navy">{y}</option>)}
+                      </select>
                     </div>
+                  </div>
 
-                    {expandedDiscurso === idx && (
-                      <div className="px-6 pb-8 md:px-8 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="bg-navy/60 p-6 md:p-8 rounded-[1.5rem] border border-white/5 shadow-inner">
-                          <h5 className="text-[10px] font-black uppercase text-purple-400 tracking-[0.2em] mb-4 flex items-center gap-2">
-                            <Quote size={12} /> Transcrição na Íntegra
-                          </h5>
-                          <div className="text-slate-300 text-sm md:text-base leading-loose font-serif whitespace-pre-line italic">
-                            {disc.transcricao}
-                          </div>
-                        </div>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-blue-400 shadow-inner">
+                      <History size={18} />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                        Mês de Referência
+                      </label>
+                      <select
+                        value={despesaMonth}
+                        onChange={(e) => { setDespesaMonth(e.target.value); setDespesaPage(1); }}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all hover:bg-white/10 cursor-pointer appearance-none"
+                      >
+                        {MONTHS.map(m => <option key={`exp-m-${m.value}`} value={m.value} className="bg-navy">{m.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end">
+                    {fetchingDesp && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold text-xs font-bold rounded-xl border border-gold/20 animate-pulse">
+                        <Loader2 size={14} className="animate-spin" />
+                        SINCROZINANDO DADOS...
                       </div>
                     )}
                   </div>
-                ))}
+                </div>
+
+                {loadingDesp ? (
+                  <TableSkeleton rows={10} />
+                ) : despesas.length > 0 ? (
+                  <div className="bg-slate-card/60 backdrop-blur-sm border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
+                    <DataTable
+                      columns={despesaColumns}
+                      data={despesas}
+                      getRowId={(row) => String(row.codDocumento)}
+                    />
+
+                    <div className="p-6 border-t border-white/5">
+                      <Pagination
+                        page={despesaPage}
+                        totalPaginas={totalPaginasDespesas}
+                        hasNext={hasNextDesp}
+                        itensPerPage={despesaItens}
+                        onItensPerPageChange={(n) => { setDespesaItens(n); setDespesaPage(1); }}
+                        onPageChange={(p) => {
+                          setDespesaPage(p);
+                          const element = document.getElementById('deputado-content-tabs');
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth' });
+                          } else {
+                            window.scrollTo({ top: 500, behavior: 'smooth' });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-20 text-center bg-slate-card/20 rounded-[3rem] border border-dashed border-white/10 group hover:border-gold/20 transition-all">
+                    <Receipt className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:scale-110 group-hover:text-gold/20 transition-all duration-500" />
+                    <p className="text-white font-black text-xl uppercase tracking-tighter">Sem registros para este período</p>
+                    <p className="text-slate-600 text-sm mt-2 max-w-xs mx-auto">
+                      A Câmara ainda não processou despesas para o mês de {MONTHS.find(m => m.value === despesaMonth)?.label} de {despesaYear}.
+                    </p>
+                    <button
+                      onClick={() => { setDespesaMonth('all'); setDespesaPage(1); }}
+                      className="mt-6 px-6 py-2.5 bg-white/5 text-slate-400 text-xs font-bold rounded-xl border border-white/10 hover:border-gold/30 hover:text-gold transition-all"
+                    >
+                      VER TODO O ANO DE {despesaYear}
+                    </button>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* TAB: FRENTES */}
+            {activeTab === 'frentes' && (
+              <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400">
+                      <Flag size={22} />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Frentes Parlamentares</h2>
+                      <p className="text-slate-500 text-xs">Bancadas e frentes das quais faz parte</p>
+                    </div>
+                  </div>
+                  <span className="px-4 py-1.5 bg-amber-500/10 text-amber-400 text-sm font-black rounded-full">
+                    {loadingFrentes ? '...' : frentes.length} frentes
+                  </span>
+                </div>
+
+                {/* Search frentes */}
+                {frentes.length > 8 && (
+                  <div className="relative max-w-md">
+                    <div className="absolute inset-y-0 left-3 flex items-center text-slate-500">
+                      <Search size={16} />
+                    </div>
+                    <input
+                      type="text"
+                      value={frentesSearch}
+                      onChange={(e) => setFrentesSearch(e.target.value)}
+                      placeholder="Buscar frente parlamentar..."
+                      className="w-full bg-navy border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                    />
+                  </div>
+                )}
+
+                {loadingFrentes && (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+                  </div>
+                )}
+
+                {!loadingFrentes && filteredFrentes.length > 0 && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {displayedFrentes.map((frente) => (
+                        <div
+                          key={frente.id}
+                          className="p-4 bg-slate-card border border-white/5 rounded-2xl space-y-2 hover:border-amber-500/20 transition-all group"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-400 shrink-0 group-hover:scale-110 transition-transform">
+                              <Flag size={14} />
+                            </div>
+                            <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[10px] font-bold rounded">
+                              Leg. {frente.idLegislatura}
+                            </span>
+                          </div>
+                          <p className="text-slate-300 text-xs font-medium leading-tight">{frente.titulo}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {filteredFrentes.length > 12 && (
+                      <button
+                        onClick={() => setShowAllFrentes(!showAllFrentes)}
+                        className="mx-auto flex items-center gap-2 px-6 py-2.5 bg-amber-500/10 text-amber-400 text-sm font-bold rounded-xl hover:bg-amber-500/20 transition-all cursor-pointer"
+                      >
+                        {showAllFrentes ? (
+                          <>
+                            <ChevronUp size={16} /> Mostrar menos
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown size={16} /> Ver todas as {filteredFrentes.length} frentes
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </>
+                )}
+
+                {!loadingFrentes && filteredFrentes.length === 0 && (
+                  <div className="py-12 text-center bg-slate-card/10 rounded-3xl border border-dashed border-white/10">
+                    <Flag className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                    <p className="text-white font-bold">
+                      {frentesSearch ? 'Nenhuma frente encontrada' : 'Nenhuma frente parlamentar'}
+                    </p>
+                    <p className="text-slate-500 text-sm mt-1">
+                      {frentesSearch ? 'Tente outro termo de busca.' : 'Este deputado não integra frentes parlamentares registradas.'}
+                    </p>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* TAB: VOTACOES */}
+            {activeTab === 'votacoes' && (
+              <section id="votacoes-section" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400">
+                    <Vote size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Votações Recentes</h2>
+                    <p className="text-slate-500 text-xs">Últimas votações do Plenário e Comissões — clique para ver o voto do deputado</p>
+                  </div>
+                </div>
+
+                {/* FILTROS DE PERÍODO */}
+                <div className="flex flex-wrap items-center gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-blue-400" />
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Ano:</span>
+                    <select
+                      value={votacaoYear}
+                      onChange={(e) => { setVotacaoYear(e.target.value); setVotacaoPage(1); }}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer hover:bg-white/10"
+                    >
+                      {YEARS.map(y => <option key={y} value={y} className="bg-navy">{y}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <History size={14} className="text-gold" />
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Mês:</span>
+                    <select
+                      value={votacaoMonth}
+                      onChange={(e) => { setVotacaoMonth(e.target.value); setVotacaoPage(1); }}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer hover:bg-white/10"
+                    >
+                      {MONTHS.map(m => <option key={m.value} value={m.value} className="bg-navy">{m.label}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="ml-auto">
+                    <span className="px-3 py-1.5 bg-blue-500/10 text-blue-400 text-[10px] font-black rounded-full border border-blue-500/20 uppercase tracking-tighter">
+                      Período: {votacaoYear} {votacaoMonth !== 'all' ? `/ ${MONTHS.find(m => m.value === votacaoMonth)?.label}` : ''}
+                    </span>
+                  </div>
+                </div>
+
+                {loadingVotacoes && <TableSkeleton rows={10} />}
+
+                {!loadingVotacoes && votacoes.length > 0 && (
+                  <DataTable
+                    columns={columns}
+                    data={votacoes}
+                    getRowId={(row) => String(row.id)}
+                    getRowCanExpand={() => true}
+                    renderSubComponent={({ row }) => (
+                      <VotacaoDetailExpansion
+                        row={row}
+                        deputadoId={deputadoId}
+                        siglaPartido={dep?.ultimoStatus.siglaPartido}
+                      />
+                    )}
+                  />
+                )}
+
+                {!loadingVotacoes && votacoes.length === 0 && (
+                  <div className="py-12 text-center bg-slate-card/10 rounded-3xl border border-dashed border-white/10">
+                    <Vote className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                    <p className="text-white font-bold">Nenhuma votação encontrada</p>
+                    <p className="text-slate-500 text-sm mt-1">Não foram encontradas votações para este período.</p>
+                  </div>
+                )}
+
                 <Pagination
-                  page={discursoPage}
-                  totalPaginas={totalPaginasDiscursos}
-                  hasNext={hasNextDiscursos}
-                  itensPerPage={discursoItens}
-                  onItensPerPageChange={(n) => { setDiscursoItens(n); setDiscursoPage(1); }}
+                  page={votacaoPage}
+                  totalPaginas={totalPaginasVotacoes}
+                  hasNext={hasNextVotacoes}
+                  itensPerPage={votacaoItens}
+                  onItensPerPageChange={(n) => { setVotacaoItens(n); setVotacaoPage(1); }}
                   onPageChange={(p) => {
-                    setDiscursoPage(p);
-                    const element = document.getElementById('discursos-section');
+                    setVotacaoPage(p);
+                    const element = document.getElementById('votacoes-section');
                     if (element) {
                       const yOffset = -100;
                       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
@@ -2297,213 +2103,377 @@ export default function DeputadoDetailPage() {
                     }
                   }}
                 />
-              </div>
+              </section>
             )}
 
-            {!loadingDiscursos && discursosData?.items.length === 0 && (
-              <div className="py-12 text-center bg-slate-card/10 rounded-3xl border border-dashed border-white/10">
-                <Info className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-white font-bold">Nenhum discurso encontrado para este período.</p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* TAB: TRAJETORIA */}
-        {activeTab === 'trajetoria' && (
-          <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-400">
-                <History size={22} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Trajetória Parlamentar</h2>
-                <p className="text-slate-500 text-xs">Linha do tempo completa de mandatos e mudanças partidárias</p>
-              </div>
-            </div>
-
-            {loadingHistorico ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-10 h-10 animate-spin text-rose-400" />
-              </div>
-            ) : historicoData && historicoData.length > 0 ? (
-              <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-rose-500/50 before:via-slate-800 before:to-transparent">
-                {[...historicoData].reverse().map((ev, iidx) => (
-                  <div key={`trajetoria-${ev.data}-${iidx}`} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    {/* Icone do Evento */}
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full border border-rose-500/50 bg-navy shadow-lg shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
-                      <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-                    </div>
-                    {/* Card do Evento */}
-                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-5 bg-slate-card border border-white/5 rounded-3xl group-hover:border-rose-500/20 transition-all shadow-2xl">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <time className="text-[10px] font-black font-mono text-rose-400 uppercase tracking-widest">
-                          {new Date(ev.data).toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' })}
-                        </time>
-                        <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold rounded uppercase">
-                          Leg. {ev.idLegislatura}
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-white font-black text-sm uppercase tracking-tight">
-                          {ev.descricaoStatus || (ev.idCondicaoEleitoral === 1 ? 'Titular em Exercício' : ev.condicaoEleitoral)}
-                        </p>
-                        <div className="flex items-center gap-3">
-                          <span className="text-gold text-xs font-bold">{ev.siglaPartido}</span>
-                          <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
-                          <span className="text-slate-400 text-xs">{ev.siglaUf}</span>
-                        </div>
-                      </div>
-                    </div>
+            {/* TAB: TRABALHO LEGISLATIVO */}
+            {activeTab === 'trabalho' && (
+              <section id="trabalho-section" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400">
+                    <FileText size={22} />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center py-20 text-slate-600 italic">Histórico detalhado não disponível para este parlamentar.</p>
-            )}
-
-            <div className="p-8 bg-navy/40 rounded-[2rem] border border-white/5 space-y-4">
-              <h3 className="text-white font-bold flex items-center gap-2">
-                <Info size={16} className="text-rose-400" /> Notas sobre a Trajetória
-              </h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                A linha do tempo acima reflete os registros oficiais de mandatos, suplências e mudanças de partido conforme informados à Câmara dos Deputados. Eventos mais antigos podem ter menor detalhamento.
-              </p>
-            </div>
-          </section>
-        )}
-
-        {/* TAB: EMENDAS */}
-        {activeTab === 'emendas' && (
-          <section id="emendas-section" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-emerald-500/15 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
-                  <PiggyBank size={28} />
+                  <div>
+                    <h3 className="text-xl font-black text-white flex items-center gap-3">
+                      Trabalho Legislativo
+                    </h3>
+                    <p className="text-slate-500 text-xs">Projetos de lei, emendas e outras proposições de autoria do parlamentar</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Emendas Orçamentárias</h2>
-                  <p className="text-slate-500 text-sm font-medium">Recursos destinados e execução financeira (Dados: Portal da Transparência)</p>
+
+                {/* FILTROS DE TRABALHO LEGISLATIVO */}
+                <div className="flex flex-wrap items-center gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-indigo-400" />
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Ano:</span>
+                    <select
+                      value={proposicaoYear}
+                      onChange={(e) => { setProposicaoYear(parseInt(e.target.value)); setProposicaoPage(1); }}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all cursor-pointer hover:bg-white/10"
+                    >
+                      {YEARS.map(y => <option key={`prop-year-${y}`} value={y} className="bg-navy">{y}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <History size={14} className="text-gold" />
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Mês:</span>
+                    <select
+                      value={proposicaoMonth}
+                      onChange={(e) => { setProposicaoMonth(e.target.value); setProposicaoPage(1); }}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all cursor-pointer hover:bg-white/10"
+                    >
+                      {MONTHS.map(m => <option key={`prop-month-${m.value}`} value={m.value} className="bg-navy">{m.label}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="ml-auto">
+                    <span className="px-3 py-1.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-black rounded-full border border-indigo-500/20 uppercase tracking-tighter shadow-sm shadow-indigo-500/5">
+                      {loadingProposicoes ? '...' : `${displayCount} resultados`}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-3">
-                <a
-                  href={`https://www.camara.leg.br/deputados/${params.id}/todas-emendas?texto=&ano=${emendaYear}&situacao=`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs font-black hover:bg-emerald-500/20 transition-all shadow-lg active:scale-95 group/link uppercase tracking-tighter"
-                  title="Ver dados oficiais no Portal da Câmara"
-                >
-                  <ExternalLink size={14} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                  Link Oficial
-                </a>
-              </div>
-            </div>
+                {loadingProposicoes && <TableSkeleton rows={10} />}
 
-            {/* FILTROS DE EMENDAS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative overflow-hidden group/em_filters">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover/em_filters:bg-emerald-500/10 transition-all"></div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-emerald-400 shadow-inner">
-                  <Calendar size={18} />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
-                    Ano Fiscal
-                  </label>
-                  <select
-                    value={emendaYear}
-                    onChange={(e) => { setEmendaYear(parseInt(e.target.value)); setEmendaPage(1); }}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all hover:bg-white/10 cursor-pointer appearance-none"
-                  >
-                    {YEARS.map(y => <option key={`emenda-y-${y}`} value={y} className="bg-navy">{y}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="md:col-span-2 flex items-center justify-end">
-                {loadingEmendas && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/20 animate-pulse">
-                    <Loader2 size={14} className="animate-spin" />
-                    SINCROZINANDO DADOS...
+                {!loadingProposicoes && proposicoesData?.items && proposicoesData.items.length > 0 && (
+                  <div className="bg-slate-card border border-white/5 rounded-[2rem] overflow-hidden">
+                    <DataTable
+                      columns={proposicaoColumns}
+                      data={displayProposicoes}
+                      getRowCanExpand={() => true}
+                      renderSubComponent={({ row }) => <ProposicaoDetailExpansion row={row} />}
+                      getRowId={(row) => String(row.id)}
+                    />
+                    <div className="p-6 border-t border-white/5">
+                      <Pagination
+                        page={proposicaoPage}
+                        totalPaginas={totalPaginasProposicoes}
+                        hasNext={hasNextProposicoes}
+                        itensPerPage={proposicaoItens}
+                        onItensPerPageChange={(n) => { setProposicaoItens(n); setProposicaoPage(1); }}
+                        onPageChange={(p) => {
+                          setProposicaoPage(p);
+                          const element = document.getElementById('trabalho-section');
+                          if (element) {
+                            const yOffset = -100;
+                            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                            window.scrollTo({ top: y, behavior: 'smooth' });
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Resumo da Execução */}
-            {!loadingEmendas && emendas.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2 group/total hover:border-white/10 transition-all">
-                  <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Total Autorizado</span>
-                  <p className="text-2xl font-black text-white group-hover:scale-105 transition-transform origin-left">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorAutorizado, 0))}</p>
-                </div>
-                <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2 group/total hover:border-blue-500/10 transition-all">
-                  <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Total Empenhado</span>
-                  <p className="text-2xl font-black text-blue-400 group-hover:scale-105 transition-transform origin-left">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorEmpenhado, 0))}</p>
-                </div>
-                <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 space-y-2 group/total hover:bg-emerald-500/15 transition-all">
-                  <span className="text-[10px] text-emerald-400/60 font-black uppercase tracking-widest">Total Pago</span>
-                  <p className="text-2xl font-black text-emerald-400 group-hover:scale-105 transition-transform origin-left">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorPago, 0))}</p>
-                </div>
-              </div>
+                {!loadingProposicoes && proposicoesData?.items.length === 0 && (
+                  <div className="py-12 text-center bg-slate-card/10 rounded-3xl border border-dashed border-white/10">
+                    <FileText className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                    <p className="text-white font-bold">Nenhuma proposição encontrada</p>
+                  </div>
+                )}
+              </section>
             )}
 
-            {loadingEmendas ? (
-              <TableSkeleton rows={8} />
-            ) : emendas.length > 0 ? (
-              <div className="space-y-6">
-                <div className="bg-slate-card/60 backdrop-blur-sm border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10">
-                  <DataTable
-                    columns={emendaColumns}
-                    data={currentEmendas}
-                    getRowId={(row) => `${row.orgaoConcedente}-${row.objetivo}-${row.valorPago}`}
-                    getRowCanExpand={() => true}
-                    renderSubComponent={({ row }) => <EmendaDetailExpansion row={row} />}
-                  />
+            {/* TAB: DISCURSOS */}
+            {activeTab === 'discursos' && (
+              <section id="discursos-section" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400">
+                    <Info size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Pronunciamentos & Discursos</h2>
+                    <p className="text-slate-500 text-xs">Registros de falas do parlamentar em plenário e comissões</p>
+                  </div>
+                </div>
 
-                  <div className="p-6 border-t border-white/5">
+                {/* FILTROS DE DISCURSOS */}
+                <div className="flex flex-wrap items-center gap-4 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-purple-400" />
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Ano:</span>
+                    <select
+                      value={discursoYear}
+                      onChange={(e) => { setDiscursoYear(parseInt(e.target.value)); setDiscursoPage(1); }}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer hover:bg-white/10"
+                    >
+                      {YEARS.map(y => <option key={`year-${y}`} value={y} className="bg-navy">{y}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <History size={14} className="text-gold" />
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Mês:</span>
+                    <select
+                      value={discursoMonth}
+                      onChange={(e) => { setDiscursoMonth(e.target.value); setDiscursoPage(1); }}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer hover:bg-white/10"
+                    >
+                      {MONTHS.map(m => <option key={`month-${m.value}`} value={m.value} className="bg-navy">{m.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {loadingDiscursos && <TableSkeleton rows={5} />}
+
+                {!loadingDiscursos && discursosData?.items && discursosData.items.length > 0 && (
+                  <div className="space-y-4">
+                    {discursosData.items.map((disc, idx) => (
+                      <div key={`discurso-${disc.dataHoraInicio}-${idx}`} className="bg-slate-card border border-white/5 rounded-[2rem] hover:border-purple-500/20 transition-all group overflow-hidden flex flex-col">
+                        <div className="p-6 md:p-8 space-y-4">
+                          <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="space-y-3 flex-1 min-w-[280px]">
+                              <div className="flex items-center gap-3">
+                                <div className="px-3 py-1 bg-purple-500/10 text-purple-400 text-[10px] font-black rounded-lg border border-purple-500/20 uppercase tracking-wider">
+                                  {disc.tipoDiscurso}
+                                </div>
+                                <span className="text-slate-500 text-[10px] font-bold flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md">
+                                  <Calendar size={12} className="text-purple-400/50" />
+                                  {new Date(disc.dataHoraInicio).toLocaleDateString('pt-BR')} às {new Date(disc.dataHoraInicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded-md border border-indigo-500/20">
+                                  {disc.faseEvento.titulo}
+                                </span>
+                              </div>
+
+                              <div className="space-y-2">
+                                <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                                  <FileText size={12} className="text-purple-400" /> Sumário do Pronunciamento
+                                </h4>
+                                <p className="text-white text-sm md:text-base font-medium leading-relaxed">
+                                  {disc.sumario || 'O parlamentar fez uso da palavra durante a sessão.'}
+                                </p>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2 pt-2">
+                                {(disc.keywords?.split(',') || []).slice(0, 8).map((kw, kidx) => (
+                                  <span key={`disc-${idx}-kw-${kidx}`} className="px-2 py-0.5 bg-white/5 text-slate-400 text-[9px] font-medium rounded border border-white/5 hover:border-purple-500/20 hover:text-purple-400 transition-all cursor-default">
+                                    {kw.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 shrink-0">
+                              {disc.urlTexto && (
+                                <a href={disc.urlTexto} target="_blank" rel="noopener noreferrer"
+                                  className="flex items-center justify-center gap-2 px-5 py-3 bg-purple-500/10 text-purple-400 text-[11px] font-black rounded-2xl border border-purple-500/20 hover:bg-purple-500/20 transition-all shadow-lg active:scale-95">
+                                  VER DIÁRIO OFICIAL <ExternalLink size={14} />
+                                </a>
+                              )}
+                              <div className="flex items-center gap-2 justify-center">
+                                {disc.urlAudio && <a href={disc.urlAudio} target="_blank" rel="noopener noreferrer" className="flex-1 flex justify-center p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all" title="Ouvir Áudio"><Mic2 size={18} /></a>}
+                                {disc.urlVideo && <a href={disc.urlVideo} target="_blank" rel="noopener noreferrer" className="flex-1 flex justify-center p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all" title="Ver Vídeo"><Play size={18} /></a>}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => setExpandedDiscurso(expandedDiscurso === idx ? null : idx)}
+                            className="w-full py-4 bg-navy/40 border border-white/5 rounded-[1.5rem] text-slate-400 hover:text-purple-400 hover:border-purple-500/20 flex items-center justify-center gap-2 transition-all font-bold group/btn active:scale-[0.99]"
+                          >
+                            {expandedDiscurso === idx ? 'Recolher Transcrição' : 'Ler Transcrição Completa'}
+                            <ChevronDown size={18} className={`transition-transform duration-300 ${expandedDiscurso === idx ? 'rotate-180' : ''}`} />
+                          </button>
+                        </div>
+
+                        {expandedDiscurso === idx && (
+                          <div className="px-6 pb-8 md:px-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="bg-navy/60 p-6 md:p-8 rounded-[1.5rem] border border-white/5 shadow-inner">
+                              <h5 className="text-[10px] font-black uppercase text-purple-400 tracking-[0.2em] mb-4 flex items-center gap-2">
+                                <Quote size={12} /> Transcrição na Íntegra
+                              </h5>
+                              <div className="text-slate-300 text-sm md:text-base leading-loose font-serif whitespace-pre-line italic">
+                                {disc.transcricao}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                     <Pagination
-                      page={emendaPage}
-                      totalPaginas={totalPaginasEmendas}
-                      hasNext={hasNextEmendas}
-                      itensPerPage={emendaItens}
-                      onItensPerPageChange={(n) => { setEmendaItens(n); setEmendaPage(1); }}
+                      page={discursoPage}
+                      totalPaginas={totalPaginasDiscursos}
+                      hasNext={hasNextDiscursos}
+                      itensPerPage={discursoItens}
+                      onItensPerPageChange={(n) => { setDiscursoItens(n); setDiscursoPage(1); }}
                       onPageChange={(p) => {
-                        setEmendaPage(p);
-                        const element = document.getElementById('emendas-section');
+                        setDiscursoPage(p);
+                        const element = document.getElementById('discursos-section');
                         if (element) {
-                          element.scrollIntoView({ behavior: 'smooth' });
+                          const yOffset = -100;
+                          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                          window.scrollTo({ top: y, behavior: 'smooth' });
                         }
                       }}
                     />
                   </div>
-                </div>
-              </div>
-            ) : (
-              <div className="py-24 text-center bg-navy/20 rounded-[3rem] border border-dashed border-white/10 group">
-                <PiggyBank className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:scale-110 group-hover:text-emerald-500/20 transition-all duration-500" />
-                <p className="text-white font-black text-xl uppercase tracking-tighter">Nenhuma emenda encontrada para {emendaYear}</p>
-                <p className="text-slate-600 text-sm mt-3 max-w-sm mx-auto leading-relaxed">
-                  Os dados podem demorar a ser processados pelo Portal da Transparência da Câmara para o ano atual.
-                </p>
-              </div>
+                )}
+
+                {!loadingDiscursos && discursosData?.items.length === 0 && (
+                  <div className="py-12 text-center bg-slate-card/10 rounded-3xl border border-dashed border-white/10">
+                    <Info className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                    <p className="text-white font-bold">Nenhum discurso encontrado para este período.</p>
+                  </div>
+                )}
+              </section>
             )}
 
-            <div className="p-8 bg-blue-500/5 rounded-[2rem] border border-blue-500/10 flex items-start gap-4">
-              <Info size={18} className="text-blue-400 shrink-0 mt-1" />
-              <div className="space-y-1">
-                <h4 className="text-white font-bold text-sm">Sobre as Emendas Orçamentárias</h4>
-                <p className="text-slate-400 text-xs leading-relaxed">
-                  As emendas parlamentares são recursos do Orçamento Geral da União cuja aplicação é indicada por deputados e senadores.
-                  Os valores exibidos nesta aba refletem a execução financeira oficial (autorização, reserva e pagamento efetivo) de acordo com o Portal da Transparência da Câmara dos Deputados.
-                </p>
-              </div>
-            </div>
-          </section>
-        )}
+
+            {/* TAB: EMENDAS */}
+            {activeTab === 'emendas' && (
+              <section id="emendas-section" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-emerald-500/15 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
+                      <PiggyBank size={28} />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-1">Emendas Orçamentárias</h2>
+                      <p className="text-slate-500 text-sm font-medium">Recursos destinados e execução financeira (Dados: Portal da Transparência)</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={`https://www.camara.leg.br/deputados/${params.id}/todas-emendas?texto=&ano=${emendaYear}&situacao=`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs font-black hover:bg-emerald-500/20 transition-all shadow-lg active:scale-95 group/link uppercase tracking-tighter"
+                      title="Ver dados oficiais no Portal da Câmara"
+                    >
+                      <ExternalLink size={14} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                      Link Oficial
+                    </a>
+                  </div>
+                </div>
+
+                {/* FILTROS DE EMENDAS */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-5 bg-navy/40 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative overflow-hidden group/em_filters">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover/em_filters:bg-emerald-500/10 transition-all"></div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-emerald-400 shadow-inner">
+                      <Calendar size={18} />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                        Ano Fiscal
+                      </label>
+                      <select
+                        value={emendaYear}
+                        onChange={(e) => { setEmendaYear(parseInt(e.target.value)); setEmendaPage(1); }}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all hover:bg-white/10 cursor-pointer appearance-none"
+                      >
+                        {YEARS.map(y => <option key={`emenda-y-${y}`} value={y} className="bg-navy">{y}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 flex items-center justify-end">
+                    {loadingEmendas && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/20 animate-pulse">
+                        <Loader2 size={14} className="animate-spin" />
+                        SINCROZINANDO DADOS...
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Resumo da Execução */}
+                {!loadingEmendas && emendas.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2 group/total hover:border-white/10 transition-all">
+                      <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Total Autorizado</span>
+                      <p className="text-2xl font-black text-white group-hover:scale-105 transition-transform origin-left">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorAutorizado, 0))}</p>
+                    </div>
+                    <div className="p-6 bg-navy/40 rounded-3xl border border-white/5 space-y-2 group/total hover:border-blue-500/10 transition-all">
+                      <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Total Empenhado</span>
+                      <p className="text-2xl font-black text-blue-400 group-hover:scale-105 transition-transform origin-left">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorEmpenhado, 0))}</p>
+                    </div>
+                    <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 space-y-2 group/total hover:bg-emerald-500/15 transition-all">
+                      <span className="text-[10px] text-emerald-400/60 font-black uppercase tracking-widest">Total Pago</span>
+                      <p className="text-2xl font-black text-emerald-400 group-hover:scale-105 transition-transform origin-left">{formatCurrency(emendas.reduce((acc, curr) => acc + curr.valorPago, 0))}</p>
+                    </div>
+                  </div>
+                )}
+
+                {loadingEmendas ? (
+                  <TableSkeleton rows={8} />
+                ) : emendas.length > 0 ? (
+                  <div className="space-y-6">
+                    <div className="bg-slate-card/60 backdrop-blur-sm border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10">
+                      <DataTable
+                        columns={emendaColumns}
+                        data={currentEmendas}
+                        getRowId={(row) => `${row.orgaoConcedente}-${row.objetivo}-${row.valorPago}`}
+                        getRowCanExpand={() => true}
+                        renderSubComponent={({ row }) => <EmendaDetailExpansion row={row} />}
+                      />
+
+                      <div className="p-6 border-t border-white/5">
+                        <Pagination
+                          page={emendaPage}
+                          totalPaginas={totalPaginasEmendas}
+                          hasNext={hasNextEmendas}
+                          itensPerPage={emendaItens}
+                          onItensPerPageChange={(n) => { setEmendaItens(n); setEmendaPage(1); }}
+                          onPageChange={(p) => {
+                            setEmendaPage(p);
+                            const element = document.getElementById('emendas-section');
+                            if (element) {
+                              element.scrollIntoView({ behavior: 'smooth' });
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-24 text-center bg-navy/20 rounded-[3rem] border border-dashed border-white/10 group">
+                    <PiggyBank className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:scale-110 group-hover:text-emerald-500/20 transition-all duration-500" />
+                    <p className="text-white font-black text-xl uppercase tracking-tighter">Nenhuma emenda encontrada para {emendaYear}</p>
+                    <p className="text-slate-600 text-sm mt-3 max-w-sm mx-auto leading-relaxed">
+                      Os dados podem demorar a ser processados pelo Portal da Transparência da Câmara para o ano atual.
+                    </p>
+                  </div>
+                )}
+
+                <div className="p-8 bg-blue-500/5 rounded-[2rem] border border-blue-500/10 flex items-start gap-4">
+                  <Info size={18} className="text-blue-400 shrink-0 mt-1" />
+                  <div className="space-y-1">
+                    <h4 className="text-white font-bold text-sm">Sobre as Emendas Orçamentárias</h4>
+                    <p className="text-slate-400 text-xs leading-relaxed">
+                      As emendas parlamentares são recursos do Orçamento Geral da União cuja aplicação é indicada por deputados e senadores.
+                      Os valores exibidos nesta aba refletem a execução financeira oficial (autorização, reserva e pagamento efetivo) de acordo com o Portal da Transparência da Câmara dos Deputados.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
       </div>
 
       {showMoradiaModal && beneficiosCard?.auxilio_moradia_mensal && (

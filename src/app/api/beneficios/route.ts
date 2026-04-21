@@ -138,6 +138,43 @@ export async function GET(req: NextRequest) {
         updated_at: new Date().toISOString()
     };
 
+    // 2.1 Scraping adicional: Nomes do Pessoal de Gabinete (para cruzamento de dados)
+    try {
+        const pessoalUrl = `https://www.camara.leg.br/deputados/${id}/pessoal-gabinete?ano=${ano}`;
+        const pessoalRes = await fetch(pessoalUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+        });
+        if (pessoalRes.ok) {
+            const pessoalHtml = await pessoalRes.text();
+            // Pega apenas a seção de "EM EXERCÍCIO"
+            const exerciseSection = pessoalHtml.split(/<h2[^>]*>[\s\S]*?EM EXERCCIO[\s\S]*?<\/h2>/i)[1];
+            if (exerciseSection) {
+                // Pega a tabela subsequente
+                const tableMatch = exerciseSection.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
+                if (tableMatch) {
+                    const rows = tableMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
+                    if (rows) {
+                        const nomes: string[] = [];
+                        rows.forEach(row => {
+                            const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi);
+                            if (cells && cells.length >= 1) {
+                                const nome = cells[0].replace(/<[^>]*>/g, '').trim();
+                                if (nome && !nome.toLowerCase().includes("nome")) {
+                                    nomes.push(nome);
+                                }
+                            }
+                        });
+                        if (nomes.length > 0) {
+                            beneficios.pessoal_gabinete_nomes = nomes;
+                        }
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.error('[Cabinet Personnel Names Scrape Error]', err);
+    }
+
     if (auxilio_moradia_mensal) {
         beneficios.auxilio_moradia_mensal = auxilio_moradia_mensal;
     }

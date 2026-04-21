@@ -824,6 +824,7 @@ export interface Beneficio {
   passaporte_diplomatico: string;
   viagens_missao: string;
   pessoal_gabinete: string;
+  pessoal_gabinete_nomes?: string[];
   updated_at: string;
 }
 
