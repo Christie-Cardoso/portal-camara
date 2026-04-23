@@ -18,7 +18,9 @@ import {
   useProposicaoTotals,
   useDeputadoDespesasAggregation,
   useDeputadoEmendas,
-  useBeneficios
+  useBeneficios,
+  useFrequencia,
+  useAnosEleito
 } from '@/hooks/use-camara';
 import { PROPOSICOES_MAP } from '@/lib/constants';
 import { ExpensesDonutChart } from '@/components/ExpensesDonutChart';
@@ -652,9 +654,18 @@ export default function DeputadoDetailPage() {
   const [showMoradiaModal, setShowMoradiaModal] = useState(false);
   const [beneficiosYear, setBeneficiosYear] = useState(new Date().getFullYear());
 
+  const [frequenciaYear, setFrequenciaYear] = useState(CURRENT_YEAR);
+
   // Novos benefícios (Scraping + Supabase)
   const { data: beneficiosCard, isLoading: isLoadingBeneficiosCard } = useBeneficios(deputadoId, CURRENT_YEAR);
   const { data: beneficiosModal, isLoading: isLoadingBeneficiosModal } = useBeneficios(deputadoId, beneficiosYear);
+  const { data: frequenciaCard, isLoading: isLoadingFrequenciaCard } = useFrequencia(deputadoId, frequenciaYear);
+  const { data: dynamicYears } = useAnosEleito(deputadoId);
+
+  const availableYears = useMemo(() => {
+    return dynamicYears && dynamicYears.length > 0 ? dynamicYears : YEARS;
+  }, [dynamicYears]);
+
   const [despesaItens, setDespesaItens] = useState(15);
   const [despesaPage, setDespesaPage] = useState(1);
   const [votacaoPage, setVotacaoPage] = useState(1);
@@ -1416,7 +1427,7 @@ export default function DeputadoDetailPage() {
                       onChange={(e) => setExpenseSelectedYear(parseInt(e.target.value))}
                       className="bg-transparent border-none text-sm font-bold text-white focus:outline-none appearance-none cursor-pointer pr-2"
                     >
-                      {YEARS.map(y => <option key={`exp-year-${y}`} value={y} className="bg-navy">{y}</option>)}
+                      {availableYears.map(y => <option key={`exp-year-${y}`} value={y} className="bg-navy">{y}</option>)}
                     </select>
                     <ChevronDown size={14} className="text-slate-500 group-hover/sel:text-white transition-colors" />
                   </div>
@@ -1649,6 +1660,162 @@ export default function DeputadoDetailPage() {
               </div>
             </div>
 
+            {/* 3b. FREQUÊNCIA E PRESENÇA (COMPACTO E REFINADO) */}
+            <style dangerouslySetInnerHTML={{
+              __html: `
+              .vertical-text {
+                writing-mode: vertical-rl;
+                transform: rotate(180deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+            `}} />
+
+            <div className="lg:col-span-3 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 lg:p-7 space-y-6 flex flex-col group/freq shadow-2xl relative overflow-hidden transition-all duration-500 hover:border-amber-500/30">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h3 className="text-xl font-black text-white uppercase tracking-tighter leading-none mb-0.5">Frequência Parlamentar</h3>
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest opacity-60">Sessões e Reuniões • {frequenciaYear}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl transition-all hover:border-amber-500/40 hover:bg-white/10 group/sel shadow-inner">
+                    <Calendar size={14} className="text-amber-400" />
+                    <select
+                      value={frequenciaYear}
+                      onChange={(e) => setFrequenciaYear(parseInt(e.target.value))}
+                      className="bg-transparent border-none text-[10px] font-black text-white focus:outline-none appearance-none cursor-pointer pr-1 uppercase"
+                    >
+                      {availableYears.map(y => <option key={`freq-y-${y}`} value={y} className="bg-navy">{y}</option>)}
+                    </select>
+                    <ChevronDown size={12} className="text-slate-500 group-hover/sel:text-white transition-colors" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative z-10 flex-1">
+                {isLoadingFrequenciaCard ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
+                    <div className="h-24 bg-white/5 rounded-2xl" />
+                    <div className="h-24 bg-white/5 rounded-2xl" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8">
+                    {/* Plenário Section */}
+                    <div className="flex items-stretch gap-6 bg-white/[0.02] p-5 rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all group/plen">
+                      <div className="flex flex-col gap-1 items-center justify-center px-3 border-r border-white/10 shrink-0">
+                        <div className="w-1 h-8 bg-amber-500 rounded-full mb-1"></div>
+                        <span className="text-[10px] font-black text-white uppercase tracking-tighter vertical-text opacity-30">PLENÁRIO</span>
+                      </div>
+
+                      <div className="flex-1 flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-1 flex-1">
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Presenças</span>
+                          <span className="flex items-center">
+                            {(!frequenciaCard?.plenario?.dias_presenca ||
+                              frequenciaCard.plenario.dias_presenca === '0' ||
+                              frequenciaCard.plenario.dias_presenca.toLowerCase().includes('indispon')) ? (
+                              <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
+                            ) : (
+                              <span className="text-xl font-black text-white tracking-tighter">{frequenciaCard.plenario.dias_presenca}</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="w-px h-8 bg-white/5"></div>
+                        <div className="flex flex-col gap-1 flex-1">
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justific.</span>
+                          <span className="flex items-center">
+                            {(!frequenciaCard?.plenario?.dias_ausencias_justificadas ||
+                              frequenciaCard.plenario.dias_ausencias_justificadas === '0' ||
+                              frequenciaCard.plenario.dias_ausencias_justificadas.toLowerCase().includes('indispon')) ? (
+                              <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
+                            ) : (
+                              <span className="text-xl font-black text-white tracking-tighter">{frequenciaCard.plenario.dias_ausencias_justificadas}</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="w-px h-8 bg-white/5"></div>
+                        <div className="flex flex-col gap-1 flex-1">
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Faltas</span>
+                          <span className="flex items-center">
+                            {(!frequenciaCard?.plenario?.dias_ausencias_nao_justificadas ||
+                              frequenciaCard.plenario.dias_ausencias_nao_justificadas === '0' ||
+                              frequenciaCard.plenario.dias_ausencias_nao_justificadas.toLowerCase().includes('indispon')) ? (
+                              <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
+                            ) : (
+                              <span className={`text-xl font-black tracking-tighter ${parseInt(frequenciaCard?.plenario?.dias_ausencias_nao_justificadas || '0') > 0 ? 'text-red-400' : 'text-white'}`}>
+                                {frequenciaCard.plenario.dias_ausencias_nao_justificadas}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+
+                    {/* Comissões Section */}
+                    <div className="flex items-stretch gap-6 bg-white/[0.02] p-5 rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all group/com">
+                      <div className="flex flex-col gap-1 items-center justify-center px-3 border-r border-white/10 shrink-0">
+                        <div className="w-1 h-8 bg-emerald-500 rounded-full mb-1"></div>
+                        <span className="text-[10px] font-black text-white uppercase tracking-tighter vertical-text opacity-30">COMISSÕES</span>
+                      </div>
+
+                      <div className="flex-1 flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-1 flex-1">
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Presenças</span>
+                          <span className="flex items-center">
+                            {(!frequenciaCard?.comissoes?.presenca ||
+                              frequenciaCard.comissoes.presenca === '0' ||
+                              frequenciaCard.comissoes.presenca.toLowerCase().includes('indispon')) ? (
+                              <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
+                            ) : (
+                              <span className="text-xl font-black text-white tracking-tighter">{frequenciaCard.comissoes.presenca}</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="w-px h-8 bg-white/5"></div>
+                        <div className="flex flex-col gap-1 flex-1">
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justific.</span>
+                          <span className="flex items-center">
+                            {(!frequenciaCard?.comissoes?.ausencias_justificadas ||
+                              frequenciaCard.comissoes.ausencias_justificadas === '0' ||
+                              frequenciaCard.comissoes.ausencias_justificadas.toLowerCase().includes('indispon')) ? (
+                              <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
+                            ) : (
+                              <span className="text-xl font-black text-white tracking-tighter">{frequenciaCard.comissoes.ausencias_justificadas}</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="w-px h-8 bg-white/5"></div>
+                        <div className="flex flex-col gap-1 flex-1">
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Faltas</span>
+                          <span className="flex items-center">
+                            {(!frequenciaCard?.comissoes?.ausencias_nao_justificadas ||
+                              frequenciaCard.comissoes.ausencias_nao_justificadas === '0' ||
+                              frequenciaCard.comissoes.ausencias_nao_justificadas.toLowerCase().includes('indispon')) ? (
+                              <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
+                            ) : (
+                              <span className={`text-xl font-black tracking-tighter ${parseInt(frequenciaCard?.comissoes?.ausencias_nao_justificadas || '0') > 0 ? 'text-red-400' : 'text-white'}`}>
+                                {frequenciaCard.comissoes.ausencias_nao_justificadas}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+
+
+
             {/* 4. PRODUÇÃO LEGISLATIVA (DESTAQUE) */}
             <div className="md:col-span-2 lg:col-span-3 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 lg:p-10 relative overflow-hidden group/prod flex flex-col h-full shadow-2xl">
               <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-500/5 rounded-full blur-[80px] group-hover/prod:bg-blue-500/10 transition-all duration-700"></div>
@@ -1668,7 +1835,7 @@ export default function DeputadoDetailPage() {
                       onChange={(e) => setProposicaoYear(parseInt(e.target.value))}
                       className="bg-transparent border-none text-sm font-bold text-white focus:outline-none appearance-none cursor-pointer pr-2"
                     >
-                      {YEARS.map(y => <option key={`prop-year-${y}`} value={y} className="bg-navy">{y}</option>)}
+                      {availableYears.map(y => <option key={`prop-year-${y}`} value={y} className="bg-navy">{y}</option>)}
                     </select>
                     <ChevronDown size={14} className="text-slate-500 group-hover/sel:text-white transition-colors" />
                   </div>
@@ -2131,7 +2298,7 @@ export default function DeputadoDetailPage() {
                       onChange={(e) => { setProposicaoYear(parseInt(e.target.value)); setProposicaoPage(1); }}
                       className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all cursor-pointer hover:bg-white/10"
                     >
-                      {YEARS.map(y => <option key={`prop-year-${y}`} value={y} className="bg-navy">{y}</option>)}
+                      {availableYears.map(y => <option key={`prop-year-${y}`} value={y} className="bg-navy">{y}</option>)}
                     </select>
                   </div>
 
@@ -2218,7 +2385,7 @@ export default function DeputadoDetailPage() {
                       onChange={(e) => { setDiscursoYear(parseInt(e.target.value)); setDiscursoPage(1); }}
                       className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer hover:bg-white/10"
                     >
-                      {YEARS.map(y => <option key={`year-${y}`} value={y} className="bg-navy">{y}</option>)}
+                      {availableYears.map(y => <option key={`year-${y}`} value={y} className="bg-navy">{y}</option>)}
                     </select>
                   </div>
 
@@ -2529,7 +2696,7 @@ export default function DeputadoDetailPage() {
                         onChange={(e) => setBeneficiosYear(Number(e.target.value))}
                         className="appearance-none bg-white/10 border border-white/10 rounded-xl px-4 py-1.5 pr-10 text-[10px] font-black uppercase text-blue-400 tracking-widest cursor-pointer hover:bg-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-95"
                       >
-                        {[2026, 2025, 2024, 2023].map((y) => (
+                        {availableYears.map((y) => (
                           <option key={y} value={y} className="bg-navy text-white font-bold">{y}</option>
                         ))}
                       </select>
