@@ -844,3 +844,82 @@ export async function fetchBeneficios(id: number, ano?: number): Promise<Benefic
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// FREQUÊNCIA PARLAMENTAR
+// ---------------------------------------------------------------------------
+
+export interface FrequenciaPlenario {
+  sessoes_total?: string;
+  sessoes_ausencias_nao_justificadas?: string;
+  dias_total?: string;
+  dias_presenca?: string;
+  dias_ausencias_justificadas?: string;
+  dias_ausencias_nao_justificadas?: string;
+}
+
+export interface FrequenciaComissoes {
+  presenca?: string;
+  ausencias_justificadas?: string;
+  ausencias_nao_justificadas?: string;
+}
+
+export interface FrequenciaParlamentar {
+  deputado_id: number;
+  ano: number;
+  plenario: FrequenciaPlenario;
+  comissoes: FrequenciaComissoes;
+  updated_at: string;
+}
+
+export async function fetchFrequencia(id: number, ano?: number): Promise<FrequenciaParlamentar | null> {
+  const query = new URLSearchParams({ id: id.toString() });
+  if (ano) query.append('ano', ano.toString());
+  
+  const url = `/api/frequencia?${query.toString()}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (err) {
+    console.error("Erro ao buscar frequencia:", err);
+    return null;
+  }
+}
+export async function fetchDeputadoAnosEleito(id: number): Promise<number[]> {
+  const url = `${BASE_URL}/deputados/${id}/historico`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const historico = data.dados || [];
+
+    // Pegar todas as legislaturas únicas do histórico
+    const legislaturas = Array.from(new Set(historico.map((h: any) => h.idLegislatura))) as number[];
+    
+    // Mapear legislaturas para anos (Heurística: Legislatura N -> (N-1)*4 + 1...4)
+    // Ex: 57 -> 2023, 2024, 2025, 2026
+    // Ex: 56 -> 2019, 2020, 2021, 2022
+    // Fórmula: AnoInicial = 2023 - (57 - ID) * 4
+    
+    const allYears = new Set<number>();
+    const currentYear = new Date().getFullYear();
+
+    legislaturas.forEach(idLeg => {
+      const startYear = 2023 - (57 - idLeg) * 4;
+      for (let i = 0; i < 4; i++) {
+        const year = startYear + i;
+        if (year <= currentYear + 1) { // Permite o ano atual e o próximo se a legislatura cobrir
+            allYears.add(year);
+        }
+      }
+    });
+
+    return Array.from(allYears).sort((a, b) => b - a);
+  } catch (err) {
+    console.error("Erro ao buscar anos eleitos:", err);
+    return [];
+  }
+}

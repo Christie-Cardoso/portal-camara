@@ -24,6 +24,8 @@ import {
   fetchDeputadoDespesasAggregation,
   fetchDeputadoEmendas,
   fetchBeneficios,
+  fetchFrequencia,
+  fetchDeputadoAnosEleito,
 } from '@/lib/camara';
 import { supabase, hasSupabaseConfig } from '@/lib/supabase';
 
@@ -270,5 +272,54 @@ export function useBeneficios(id: number, ano?: number) {
     queryFn: () => fetchBeneficios(id, ano),
     enabled: !!id,
     staleTime: 6 * 60 * 60 * 1000, // 6 hours
+  });
+}
+
+export function useFrequencia(id: number, ano?: number) {
+  const year = ano || new Date().getFullYear();
+  
+  return useQuery({
+    queryKey: ['deputados', 'frequencia', id, year],
+    queryFn: async () => {
+      // 1. Tenta buscar diretamente no Supabase (mais rápido, evita hop de API)
+      if (hasSupabaseConfig()) {
+        try {
+          const { data, error } = await supabase
+            .from('frequencia_parlamentar')
+            .select('*')
+            .eq('deputado_id', id)
+            .eq('ano', year)
+            .maybeSingle();
+            
+          if (data && !error) {
+            const updatedAt = new Date(data.updated_at).getTime();
+            const now = new Date().getTime();
+            // Se os dados têm menos de 12 horas, usamos direto do banco
+            if (now - updatedAt < 12 * 60 * 60 * 1000) {
+              console.log(`[useFrequencia] Carregado diretamente do Supabase: ${id} (${year})`);
+              return data;
+            }
+          }
+        } catch (e) {
+          console.warn('[useFrequencia] Erro ao buscar no banco, tentando via API...', e);
+        }
+      }
+
+      // 2. Se não tiver no banco ou estiver antigo, chama a API Route
+      // A API Route fará o Scraping e salvará no banco para a próxima vez.
+      return fetchFrequencia(id, year);
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000, // Mantém em memória por 5 min
+  });
+}
+
+
+export function useAnosEleito(id: number) {
+  return useQuery({
+    queryKey: ['deputados', 'anos-eleito', id],
+    queryFn: () => fetchDeputadoAnosEleito(id),
+    enabled: !!id,
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
   });
 }
