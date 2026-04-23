@@ -1718,7 +1718,6 @@ export default function DeputadoDetailPage() {
                           <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Presenças</span>
                           <span className="flex items-center">
                             {(!frequenciaCard?.plenario?.dias_presenca ||
-                              frequenciaCard.plenario.dias_presenca === '0' ||
                               frequenciaCard.plenario.dias_presenca.toLowerCase().includes('indispon')) ? (
                               <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
                             ) : (
@@ -1731,7 +1730,6 @@ export default function DeputadoDetailPage() {
                           <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justific.</span>
                           <span className="flex items-center">
                             {(!frequenciaCard?.plenario?.dias_ausencias_justificadas ||
-                              frequenciaCard.plenario.dias_ausencias_justificadas === '0' ||
                               frequenciaCard.plenario.dias_ausencias_justificadas.toLowerCase().includes('indispon')) ? (
                               <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
                             ) : (
@@ -1744,7 +1742,6 @@ export default function DeputadoDetailPage() {
                           <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Faltas</span>
                           <span className="flex items-center">
                             {(!frequenciaCard?.plenario?.dias_ausencias_nao_justificadas ||
-                              frequenciaCard.plenario.dias_ausencias_nao_justificadas === '0' ||
                               frequenciaCard.plenario.dias_ausencias_nao_justificadas.toLowerCase().includes('indispon')) ? (
                               <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
                             ) : (
@@ -1770,7 +1767,6 @@ export default function DeputadoDetailPage() {
                           <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Presenças</span>
                           <span className="flex items-center">
                             {(!frequenciaCard?.comissoes?.presenca ||
-                              frequenciaCard.comissoes.presenca === '0' ||
                               frequenciaCard.comissoes.presenca.toLowerCase().includes('indispon')) ? (
                               <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
                             ) : (
@@ -1783,7 +1779,6 @@ export default function DeputadoDetailPage() {
                           <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justific.</span>
                           <span className="flex items-center">
                             {(!frequenciaCard?.comissoes?.ausencias_justificadas ||
-                              frequenciaCard.comissoes.ausencias_justificadas === '0' ||
                               frequenciaCard.comissoes.ausencias_justificadas.toLowerCase().includes('indispon')) ? (
                               <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
                             ) : (
@@ -1796,7 +1791,6 @@ export default function DeputadoDetailPage() {
                           <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Faltas</span>
                           <span className="flex items-center">
                             {(!frequenciaCard?.comissoes?.ausencias_nao_justificadas ||
-                              frequenciaCard.comissoes.ausencias_nao_justificadas === '0' ||
                               frequenciaCard.comissoes.ausencias_nao_justificadas.toLowerCase().includes('indispon')) ? (
                               <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold lowercase rounded-md border border-white/5">indisponível</span>
                             ) : (
