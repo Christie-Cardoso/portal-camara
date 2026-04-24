@@ -11,6 +11,7 @@ import {
   fetchDeputadoEmendas,
   fetchBeneficios,
   fetchProposicaoTotals,
+  fetchFrequencia,
 } from '@/lib/camara';
 import { supabase, hasSupabaseConfig } from '@/lib/supabase';
 import {
@@ -18,7 +19,7 @@ import {
   TrendingUp, TrendingDown, Minus, Trophy, Plus, UserPlus,
   HelpCircle, Home, DollarSign, Activity, Users, Info, ChevronRight,
   User, Crown, Medal,
-  FileText, Mic2
+  FileText, Mic2, CalendarCheck, Gavel, PenTool, Building2, Award
 } from 'lucide-react';
 import { useDebounce } from 'use-debounce';
 import Image from 'next/image';
@@ -142,25 +143,33 @@ function ComparisonSlot({
   const [showSearch, setShowSearch] = useState(false);
 
   return (
-    <div className={`relative flex flex-col items-center justify-center aspect-[3/4] rounded-[2.5rem] border-2 border-dashed transition-all duration-500 group overflow-hidden ${profile
+    <div className={`relative flex flex-col items-center justify-center aspect-auto md:aspect-[3/4] min-h-[280px] md:min-h-0 rounded-[2.5rem] border-2 border-dashed transition-all duration-500 group ${profile
       ? 'bg-slate-card/80 border-gold/20 shadow-2xl shadow-black/40'
       : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-gold/20'
       }`}>
+      {/* Botão de remover — FORA do overflow para nunca ficar atrás da imagem */}
+      {profile && (
+        <button
+          onClick={() => onRemove(id!)}
+          className="absolute -top-2 -right-2 z-30 p-2.5 bg-navy hover:bg-red-500 text-slate-400 hover:text-white rounded-full border-2 border-white/10 hover:border-red-500 transition-all hover:scale-110 active:scale-90 shadow-xl shadow-black/50"
+        >
+          <X size={14} strokeWidth={3} />
+        </button>
+      )}
+
       {profile ? (
         <>
-          <div className="absolute top-4 right-4 z-20">
-            <button
-              onClick={() => onRemove(id!)}
-              className="p-2 bg-black/40 hover:bg-red-500/80 text-white rounded-full backdrop-blur-lg border border-white/10 transition-all hover:scale-110 active:scale-90"
-            >
-              <X size={14} />
-            </button>
-          </div>
-
-          <div className="w-full h-full relative p-6 flex flex-col items-center">
-            <div className={`relative w-full aspect-square rounded-[2rem] overflow-hidden border shadow-2xl mb-4 group-hover:scale-105 transition-transform duration-500 ${
-              isWinner ? 'border-gold shadow-[0_0_30px_rgba(255,215,0,0.3)] ring-2 ring-gold/20' : 'border-white/10'
-            }`}>
+          {/* Coroa do campeão — flutuando acima do card */}
+          {isWinner && (
+            <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-30 animate-[float_2s_ease-in-out_infinite]">
+              <div className="bg-gold text-navy p-2.5 rounded-2xl shadow-xl shadow-gold/40 border-2 border-yellow-200">
+                <Crown size={22} strokeWidth={3} />
+              </div>
+            </div>
+          )}
+          <div className="w-full h-full relative p-6 flex flex-col items-center overflow-hidden rounded-[2.3rem]">
+            <div className={`relative w-full aspect-square max-w-[220px] rounded-[2rem] overflow-hidden border shadow-2xl mb-4 group-hover:scale-105 transition-transform duration-500 ${isWinner ? 'border-gold shadow-[0_0_30px_rgba(255,215,0,0.3)] ring-2 ring-gold/20' : 'border-white/10'
+              }`}>
               <Image
                 src={profile.ultimoStatus.urlFoto}
                 alt={profile.ultimoStatus.nome}
@@ -169,20 +178,12 @@ function ComparisonSlot({
                 unoptimized
               />
               <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-transparent to-transparent opacity-60"></div>
-              
-              {isWinner && (
-                <div className="absolute -top-1 -right-1 z-20 animate-bounce">
-                  <div className="bg-gold text-navy p-2 rounded-2xl shadow-xl shadow-gold/40 border-2 border-yellow-200">
-                    <Crown size={20} strokeWidth={3} />
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="text-center space-y-1 w-full translate-y-0 group-hover:-translate-y-2 transition-transform">
               {isWinner && (
                 <span className="text-[8px] font-black text-gold uppercase tracking-[0.2em] mb-1 block animate-pulse">
-                  Vencedor da Batalha
+                  Campeão
                 </span>
               )}
               <h3 className={`text-sm font-black uppercase tracking-tighter line-clamp-2 leading-tight px-2 ${isWinner ? 'text-gold' : 'text-white'}`}>
@@ -221,13 +222,15 @@ function ComparisonSlot({
       )}
 
       {showSearch && (
-        <SlotSearchOverlay
-          onSelect={(selectedId) => {
-            onSelect(selectedId);
-            setShowSearch(false);
-          }}
-          onClose={() => setShowSearch(false)}
-        />
+        <div className="absolute inset-0 z-40 rounded-[2.3rem] overflow-hidden">
+          <SlotSearchOverlay
+            onSelect={(selectedId) => {
+              onSelect(selectedId);
+              setShowSearch(false);
+            }}
+            onClose={() => setShowSearch(false)}
+          />
+        </div>
       )}
     </div>
   );
@@ -289,13 +292,22 @@ export default function ComparativoPage() {
 
   // Carregar total de atos/proposições (2023-2026)
   const proposicoesQueries = useQueries({
-    queries: selectedIds.flatMap(id => 
+    queries: selectedIds.flatMap(id =>
       COMPARISON_YEARS.map(year => ({
         queryKey: ['proposicao', 'totals', id, { ano: year }],
         queryFn: () => fetchProposicaoTotals(id, { ano: year }),
         staleTime: 6 * 60 * 60 * 1000,
       }))
     )
+  });
+
+  // Frequência parlamentar (ano corrente)
+  const frequenciaQueries = useQueries({
+    queries: selectedIds.map(id => ({
+      queryKey: ['deputados', 'frequencia', id, CURRENT_YEAR],
+      queryFn: () => fetchFrequencia(id, CURRENT_YEAR),
+      staleTime: 6 * 60 * 60 * 1000,
+    }))
   });
 
   // Consultar secretários habilitado apenas quando o nome do gabinete estiver disponível
@@ -349,11 +361,24 @@ export default function ComparativoPage() {
         return acc + (q.data?.length || 0);
       }, 0);
 
-      // Atos (Proposições)
+      // Produção Legislativa (Autoria + Relatorias, SEM atos processuais)
       const depProposicoesQueries = proposicoesQueries.slice(startIdx, endIdx);
-      const totalAtos = depProposicoesQueries.reduce((acc, q) => {
-        return acc + (q.data?.total || 0);
+      const totalAutoria = depProposicoesQueries.reduce((acc, q) => {
+        return acc + (q.data?.apiTotal || 0);
       }, 0);
+      const totalRelatorias = depProposicoesQueries.reduce((acc, q) => {
+        return acc + (q.data?.relatadas || 0);
+      }, 0);
+
+      // Frequência
+      const freq = frequenciaQueries[index]?.data;
+      const presencasPlenario = freq?.plenario?.dias_presenca ? parseInt(freq.plenario.dias_presenca) : 0;
+      const faltasJustificadas = freq?.plenario?.dias_ausencias_justificadas ? parseInt(freq.plenario.dias_ausencias_justificadas) : 0;
+      const faltasPlenario = freq?.plenario?.dias_ausencias_nao_justificadas ? parseInt(freq.plenario.dias_ausencias_nao_justificadas) : 0;
+      // Comissões
+      const comPresenca = freq?.comissoes?.presenca ? parseInt(freq.comissoes.presenca) : 0;
+      const comFaltasJust = freq?.comissoes?.ausencias_justificadas ? parseInt(freq.comissoes.ausencias_justificadas) : 0;
+      const comFaltasNaoJust = freq?.comissoes?.ausencias_nao_justificadas ? parseInt(freq.comissoes.ausencias_nao_justificadas) : 0;
 
       // Órgãos
       const orgaos = orgaosQueries[index]?.data?.items?.filter(o => !o.dataFim) || [];
@@ -364,10 +389,15 @@ export default function ComparativoPage() {
 
       // Benefícios (Moradia)
       const beneficios = beneficiosQueries[index]?.data;
+      const usaImovel = beneficios?.imovel_funcional?.toLowerCase().includes("ocupa") || beneficios?.imovel_funcional?.toLowerCase().includes("faz uso");
+      const recebeAuxilio = beneficios?.auxilio_moradia?.toLowerCase().includes("recebe");
       const housingStatus = beneficios ? (
-        beneficios.imovel_funcional.toLowerCase().includes("ocupa") ? "Imóvel Funcional" :
-          beneficios.auxilio_moradia.toLowerCase().includes("recebe") ? "Auxílio-moradia" : "Não utiliza"
+        usaImovel ? "Imóvel Funcional" :
+          recebeAuxilio ? "Auxílio-Moradia" : "Não utiliza"
       ) : "—";
+      const housingType: 'imovel' | 'auxilio' | 'nenhum' | 'loading' = beneficios ? (
+        usaImovel ? 'imovel' : recebeAuxilio ? 'auxilio' : 'nenhum'
+      ) : 'loading';
 
       const isReadyByExpenses = depExpensesQueries.every(q => !q.isLoading);
       const isReadyByEmendas = depEmendasQueries.every(q => !q.isLoading);
@@ -377,57 +407,67 @@ export default function ComparativoPage() {
         profile,
         totalGasto,
         totalEmendas,
-        totalAtos,
+        totalAutoria,
+        totalRelatorias,
+        presencasPlenario,
+        faltasJustificadas,
+        faltasPlenario,
+        comPresenca,
+        comFaltasJust,
+        comFaltasNaoJust,
         staffCount,
         housingStatus,
+        housingType,
         numOrgaos: orgaos.length,
         isReady: !!profile && isReadyByExpenses && isReadyByEmendas && !orgaosQueries[index].isLoading
       };
     });
-  }, [selectedIds, profilesQueries, expensesQueries, emendasQueries, proposicoesQueries, orgaosQueries, secretariosQueries, beneficiosQueries]);
+  }, [selectedIds, profilesQueries, expensesQueries, emendasQueries, proposicoesQueries, frequenciaQueries, orgaosQueries, secretariosQueries, beneficiosQueries]);
 
   const allReady = stats.length > 0 && stats.every(s => s.isReady);
   const minGasto = allReady ? Math.min(...stats.map(s => s.totalGasto)) : 0;
   const maxOrgaos = allReady ? Math.max(...stats.map(s => s.numOrgaos)) : 0;
   const maxEmendas = allReady ? Math.max(...stats.map(s => s.totalEmendas)) : 0;
-  const maxAtos = allReady ? Math.max(...stats.map(s => s.totalAtos)) : 0;
+  const maxAutoria = allReady ? Math.max(...stats.map(s => s.totalAutoria)) : 0;
+  const maxRelatorias = allReady ? Math.max(...stats.map(s => s.totalRelatorias)) : 0;
+  const maxPresencas = allReady ? Math.max(...stats.map(s => s.presencasPlenario)) : 0;
+  const maxComPresenca = allReady ? Math.max(...stats.map(s => s.comPresenca)) : 0;
+  const minFaltas = allReady ? Math.min(...stats.map(s => s.faltasPlenario)) : 0;
   const minStaff = allReady ? Math.min(...stats.map(s => s.staffCount)) : 0;
 
-  // Determinar o Vencedor da Batalha (Scoring)
+  // Determinar o Vencedor da Batalha (Scoring com 8 métricas)
   const winnerIds = useMemo(() => {
     if (!allReady || stats.length < 2) return [];
-    
-    // Pontuação por métrica
+
     const scores = stats.map(s => {
       let points = 0;
-      if (s.totalGasto === minGasto && s.totalGasto > 0) points++;
-      if (s.numOrgaos === maxOrgaos && s.numOrgaos > 0) points++;
-      if (s.totalEmendas === maxEmendas && s.totalEmendas > 0) points++;
-      if (s.totalAtos === maxAtos && s.totalAtos > 0) points++;
-      if (s.staffCount === minStaff && s.staffCount > 0) points++;
+      if (s.totalGasto === minGasto && s.totalGasto > 0) points++;        // Menor gasto
+      if (s.numOrgaos === maxOrgaos && s.numOrgaos > 0) points++;         // Mais comissões
+      if (s.totalEmendas === maxEmendas && s.totalEmendas > 0) points++;   // Mais emendas
+      if (s.totalAutoria === maxAutoria && s.totalAutoria > 0) points++;   // Mais projetos
+      if (s.totalRelatorias === maxRelatorias && s.totalRelatorias > 0) points++; // Mais relatorias
+      if (s.presencasPlenario === maxPresencas && s.presencasPlenario > 0) points++; // Mais presença
+      if (s.faltasPlenario === minFaltas) points++;                        // Menos faltas
+      if (s.staffCount === minStaff && s.staffCount > 0) points++;         // Equipe enxuta
       return { id: s.id, points };
     });
 
     const maxPoints = Math.max(...scores.map(s => s.points));
     if (maxPoints === 0) return [];
-    
+
     return scores.filter(s => s.points === maxPoints).map(s => s.id);
-  }, [allReady, stats, minGasto, maxOrgaos, maxEmendas, maxAtos, minStaff]);
+  }, [allReady, stats, minGasto, maxOrgaos, maxEmendas, maxAutoria, maxRelatorias, maxPresencas, minFaltas, minStaff]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 md:py-24 space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
 
-      {/* Header & Logo Section */}
-      <div className="text-center space-y-6 max-w-3xl mx-auto relative">
-        <div className="inline-flex items-center gap-3 px-6 py-2 bg-gold/10 border border-gold/20 rounded-full text-gold mb-4">
-          <Trophy size={16} />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Comparativo Parlamentar 2026</span>
-        </div>
-        <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase italic">
-          Batalha de <span className="text-gold">Gigantes</span>
+      {/* Header */}
+      <div className="text-center space-y-3 max-w-2xl mx-auto">
+        <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase">
+          Comparativo <span className="text-gold">Parlamentar</span>
         </h1>
-        <p className="text-slate-400 text-sm md:text-base font-medium max-w-xl mx-auto leading-relaxed">
-          Compare gastos, atuação legislativa e participação em comissões dos deputados federais brasileiros em tempo real.
+        <p className="text-slate-500 text-sm font-medium">
+          Selecione até 3 deputados para comparar métricas de atuação, gastos e presença.
         </p>
       </div>
 
@@ -603,6 +643,109 @@ export default function ComparativoPage() {
                 ))}
               </div>
 
+              {/* Tópico: Frequência Parlamentar */}
+              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
+                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
+                  <CalendarCheck className="text-gold" size={24} />
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Presença</span>
+                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Frequência {CURRENT_YEAR}</h3>
+                  </div>
+                </div>
+                {stats.map(s => {
+                  const isWinner = allReady && s.presencasPlenario === maxPresencas && stats.length > 1 && s.presencasPlenario > 0;
+                  return (
+                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-amber-500/5' : ''}`}>
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col items-center">
+                            <span className={`text-2xl font-black ${isWinner ? 'text-amber-400' : 'text-white'}`}>
+                              {s.isReady ? s.presencasPlenario : '—'}
+                            </span>
+                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Presenças</span>
+                          </div>
+                          <div className="w-px h-8 bg-white/10"></div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-base font-black text-yellow-400">
+                              {s.isReady ? s.faltasJustificadas : '—'}
+                            </span>
+                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Justificadas</span>
+                          </div>
+                          <div className="w-px h-8 bg-white/10"></div>
+                          <div className="flex flex-col items-center">
+                            <span className={`text-base font-black ${s.faltasPlenario > 0 ? 'text-red-400' : 'text-white'}`}>
+                              {s.isReady ? s.faltasPlenario : '—'}
+                            </span>
+                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Faltas</span>
+                          </div>
+                        </div>
+                        <span className="text-[7px] text-slate-600 font-bold uppercase tracking-widest">Plenário • {CURRENT_YEAR}</span>
+                      </div>
+                      {isWinner && (
+                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase rounded-lg border border-amber-500/30">
+                          Mais Presente
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {[...Array(3 - stats.length)].map((_, i) => (
+                  <div key={`empty-freq-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
+                ))}
+              </div>
+
+              {/* Tópico: Frequência Comissões */}
+              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
+                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
+                  <Users className="text-gold" size={24} />
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Presença</span>
+                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Comissões {CURRENT_YEAR}</h3>
+                  </div>
+                </div>
+                {stats.map(s => {
+                  const isWinner = allReady && s.comPresenca === maxComPresenca && stats.length > 1 && s.comPresenca > 0;
+                  return (
+                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-teal-500/5' : ''}`}>
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col items-center">
+                            <span className="text-2xl font-black text-white">
+                              {s.isReady ? s.comPresenca : '—'}
+                            </span>
+                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Presenças</span>
+                          </div>
+                          <div className="w-px h-8 bg-white/10"></div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-base font-black text-yellow-400">
+                              {s.isReady ? s.comFaltasJust : '—'}
+                            </span>
+                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Justificadas</span>
+                          </div>
+                          <div className="w-px h-8 bg-white/10"></div>
+                          <div className="flex flex-col items-center">
+                            <span className={`text-base font-black ${s.comFaltasNaoJust > 0 ? 'text-red-400' : 'text-white'}`}>
+                              {s.isReady ? s.comFaltasNaoJust : '—'}
+                            </span>
+                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Faltas</span>
+                          </div>
+                        </div>
+                        <span className="text-[7px] text-slate-600 font-bold uppercase tracking-widest">Comissões • {CURRENT_YEAR}</span>
+                      </div>
+                      {isWinner && (
+                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-teal-500/20 text-teal-400 text-[8px] font-black uppercase rounded-lg border border-teal-500/30">
+                          Mais Presente
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {[...Array(3 - stats.length)].map((_, i) => (
+                  <div key={`empty-com-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
+                ))}
+              </div>
+
+              {/* Tópico: Emendas */}
               <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
                 <div className="p-8 bg-white/[0.02] flex items-center gap-4">
                   <FileText className="text-gold" size={24} />
@@ -636,41 +779,71 @@ export default function ComparativoPage() {
                 ))}
               </div>
 
-              {/* Linha: Atos */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5 group">
+              {/* Tópico: Autoria de Projetos */}
+              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
                 <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <Mic2 className="text-gold" size={24} />
+                  <PenTool className="text-gold" size={24} />
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Legislativo</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Total de Atos</h3>
+                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Autoria</h3>
                   </div>
                 </div>
                 {stats.map(s => {
-                  const isWinner = allReady && s.totalAtos === maxAtos && stats.length > 1 && s.totalAtos > 0;
+                  const isWinner = allReady && s.totalAutoria === maxAutoria && stats.length > 1 && s.totalAutoria > 0;
                   return (
-                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-orange-500/5' : ''}`}>
+                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-blue-500/5' : ''}`}>
                       <div className="flex flex-col">
-                        <span className={`text-base font-black ${isWinner ? 'text-orange-400' : 'text-white'}`}>
-                          {s.isReady ? `${s.totalAtos} atos` : '—'}
+                        <span className={`text-2xl font-black ${isWinner ? 'text-blue-400' : 'text-white'}`}>
+                          {s.isReady ? s.totalAutoria : '—'}
                         </span>
-                        {s.isReady && (
-                          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1 text-center">Acumulado 2023-2026</span>
-                        )}
+                        <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1">Projetos de Lei • 2023-2026</span>
                       </div>
                       {isWinner && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-orange-500/20 text-orange-400 text-[8px] font-black uppercase rounded-lg border border-orange-500/30">
-                          Mais Ativo
+                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[8px] font-black uppercase rounded-lg border border-blue-500/30">
+                          Mais Projetos
                         </div>
                       )}
                     </div>
                   );
                 })}
                 {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-atos-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
+                  <div key={`empty-autoria-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
                 ))}
               </div>
 
-              {/* Tópico: Estrutura & Benefícios */}
+              {/* Tópico: Relatorias */}
+              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
+                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
+                  <Gavel className="text-gold" size={24} />
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Legislativo</span>
+                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Relatorias</h3>
+                  </div>
+                </div>
+                {stats.map(s => {
+                  const isWinner = allReady && s.totalRelatorias === maxRelatorias && stats.length > 1 && s.totalRelatorias > 0;
+                  return (
+                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-purple-500/5' : ''}`}>
+                      <div className="flex flex-col">
+                        <span className={`text-2xl font-black ${isWinner ? 'text-purple-400' : 'text-white'}`}>
+                          {s.isReady ? s.totalRelatorias : '—'}
+                        </span>
+                        <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1">Relatados • 2023-2026</span>
+                      </div>
+                      {isWinner && (
+                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-purple-500/20 text-purple-400 text-[8px] font-black uppercase rounded-lg border border-purple-500/30">
+                          Mais Relatorias
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {[...Array(3 - stats.length)].map((_, i) => (
+                  <div key={`empty-relat-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
+                ))}
+              </div>
+
+              {/* Tópico: Equipe */}
               <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
                 <div className="p-8 bg-white/[0.02] flex items-center gap-4">
                   <Users className="text-gold" size={24} />
@@ -699,19 +872,37 @@ export default function ComparativoPage() {
                 ))}
               </div>
 
+              {/* Tópico: Moradia (Imóvel Funcional / Auxílio) */}
               <div className="grid grid-cols-1 md:grid-cols-4">
                 <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <Home className="text-gold" size={24} />
+                  <Building2 className="text-gold" size={24} />
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Residência</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Moradia</h3>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Benefício</span>
+                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Moradia em Brasília</h3>
                   </div>
                 </div>
                 {stats.map(s => (
                   <div key={s.id} className="p-8 flex flex-col items-center justify-center text-center border-l border-white/5">
-                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
-                      {s.isReady ? s.housingStatus : '—'}
-                    </span>
+                    {s.isReady ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.housingType === 'imovel' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                          s.housingType === 'auxilio' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                            'bg-white/5 text-slate-500 border border-white/5'
+                          }`}>
+                          {s.housingType === 'imovel' ? <Home size={18} /> :
+                            s.housingType === 'auxilio' ? <DollarSign size={18} /> :
+                              <X size={18} />}
+                        </div>
+                        <span className={`text-[10px] font-black uppercase tracking-widest leading-relaxed ${s.housingType === 'imovel' ? 'text-emerald-400' :
+                          s.housingType === 'auxilio' ? 'text-blue-400' :
+                            'text-slate-500'
+                          }`}>
+                          {s.housingStatus}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-500">—</span>
+                    )}
                   </div>
                 ))}
                 {[...Array(3 - stats.length)].map((_, i) => (

@@ -96,7 +96,7 @@ export function AttendanceCard({ deputadoId }: AttendanceCardProps) {
                   </div>
                   <div className="w-px h-8 bg-white/5"></div>
                   <div className="flex flex-col gap-1 flex-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justific.</span>
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justificadas</span>
                     <span className="flex items-center">{renderMetric(frequenciaCard?.plenario?.dias_ausencias_justificadas)}</span>
                   </div>
                   <div className="w-px h-8 bg-white/5"></div>
@@ -120,7 +120,7 @@ export function AttendanceCard({ deputadoId }: AttendanceCardProps) {
                   </div>
                   <div className="w-px h-8 bg-white/5"></div>
                   <div className="flex flex-col gap-1 flex-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justific.</span>
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justificadas</span>
                     <span className="flex items-center">{renderMetric(frequenciaCard?.comissoes?.ausencias_justificadas)}</span>
                   </div>
                   <div className="w-px h-8 bg-white/5"></div>
