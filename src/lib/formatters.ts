@@ -10,6 +10,13 @@ export function formatCurrency(v: number): string {
 }
 
 /**
+ * Formata um número com separadores de milhar brasileiros.
+ */
+export function formatNumber(v: number): string {
+  return v.toLocaleString('pt-BR');
+}
+
+/**
  * Extrai informações do autor a partir da descrição da proposição.
  * Captura padrões como "pelo Deputado Nome (PARTIDO/UF)".
  */
