@@ -1,462 +1,38 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/query-keys';
-import {
-  fetchDeputados,
-  fetchDeputadoById,
-  fetchDeputadoDespesas,
-  fetchDeputadoOrgaos,
-  fetchDeputadoEmendas,
-  fetchBeneficios,
-  fetchProposicaoTotals,
-  fetchFrequencia,
-} from '@/lib/camara';
-import { supabase, hasSupabaseConfig } from '@/lib/supabase';
-import {
-  Search, X, Check, XCircle,
-  TrendingUp, TrendingDown, Minus, Trophy, Plus, UserPlus,
-  HelpCircle, Home, DollarSign, Activity, Users, Info, ChevronRight,
-  User, Crown, Medal,
-  FileText, Mic2, CalendarCheck, Gavel, PenTool, Building2, Award
-} from 'lucide-react';
-import { useDebounce } from 'use-debounce';
-import Image from 'next/image';
-
-const CURRENT_YEAR = 2026;
-const COMPARISON_YEARS = [2023, 2024, 2025, 2026];
-
-// Dados estáticos dos parlamentares mais votados / famosos em exercício (57ª Legislatura)
-const TOP_15_DEPUTADOS = [
-  { id: 209787, nome: "Nikolas Ferreira", partido: "PL", uf: "MG", votos: 1492047, rank: 1 },
-  { id: 204534, nome: "Tabata Amaral", partido: "PSB", uf: "SP", votos: 243037, rank: 2 },
-  { id: 160976, nome: "Tiririca", partido: "PL", uf: "SP", votos: 222036, rank: 3 },
-  { id: 74646, nome: "Aécio Neves", partido: "PSDB", uf: "MG", votos: 85341, rank: 4 },
-  { id: 220645, nome: "Erika Hilton", partido: "PSOL", uf: "SP", votos: 256903, rank: 5 },
-  { id: 204536, nome: "Kim Kataguiri", partido: "UNIÃO", uf: "SP", votos: 295460, rank: 6 },
-  { id: 204515, nome: "André Janones", partido: "AVANTE", uf: "MG", votos: 238967, rank: 7 },
-  { id: 204374, nome: "Bia Kicis", partido: "PL", uf: "DF", votos: 214733, rank: 8 },
-  { id: 107283, nome: "Gleisi Hoffmann", partido: "PT", uf: "PR", votos: 261247, rank: 9 },
-  { id: 156190, nome: "Marcel van Hattem", partido: "NOVO", uf: "RS", votos: 226816, rank: 10 },
-  { id: 204535, nome: "Sâmia Bomfim", partido: "PSOL", uf: "SP", votos: 226187, rank: 11 },
-  { id: 220623, nome: "Duda Salabert", partido: "PDT", uf: "MG", votos: 222985, rank: 12 },
-  { id: 74398, nome: "Maria do Rosário", partido: "PT", uf: "RS", votos: 151057, rank: 13 },
-  { id: 178947, nome: "Sóstenes Cavalcante", partido: "PL", uf: "RJ", votos: 154733, rank: 14 },
-  { id: 160592, nome: "Zeca Dirceu", partido: "PT", uf: "PR", votos: 123033, rank: 15 },
-].sort((a, b) => b.votos - a.votos);
-
-function formatCurrency(v: number): string {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-function formatNumber(v: number): string {
-  return v.toLocaleString('pt-BR');
-}
-
-// ---------------------------------------------------------------------------
-// Search Component (Integrated in Slot)
-// ---------------------------------------------------------------------------
-
-function SlotSearchOverlay({ onSelect, onClose }: { onSelect: (id: number) => void; onClose: () => void }) {
-  const [query, setQuery] = useState('');
-  const [debouncedQuery] = useDebounce(query, 500);
-
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.deputados.list({ nome: debouncedQuery, itens: 5 }),
-    queryFn: () => fetchDeputados({ nome: debouncedQuery, itens: 5 }),
-    enabled: debouncedQuery.length >= 2,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  return (
-    <div className="absolute inset-0 z-50 bg-navy/95 backdrop-blur-xl p-4 flex flex-col animate-in fade-in zoom-in-95 duration-200">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-[10px] font-black uppercase tracking-widest text-gold text-center w-full">Buscar Parlamentar</span>
-        <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-lg text-slate-400 absolute right-4">
-          <X size={16} />
-        </button>
-      </div>
-
-      <div className="relative mb-4">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        <input
-          autoFocus
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Digite o nome..."
-          className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/50 transition-all shadow-inner"
-        />
-      </div>
-
-      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-          </div>
-        ) : data?.items?.map(dep => (
-          <button
-            key={dep.id}
-            onClick={() => onSelect(dep.id)}
-            className="w-full flex items-center gap-3 p-2 bg-white/2 hover:bg-white/5 border border-white/5 rounded-xl transition-all group"
-          >
-            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-navy border border-white/10 pointer-events-none">
-              <Image src={dep.urlFoto} alt={dep.nome} width={32} height={32} className="object-cover" unoptimized />
-            </div>
-            <div className="text-left overflow-hidden">
-              <h4 className="text-[10px] font-black text-white uppercase truncate leading-tight">{dep.nome}</h4>
-              <p className="text-[8px] text-slate-500 font-bold uppercase">{dep.siglaPartido} • {dep.siglaUf}</p>
-            </div>
-            <Plus size={12} className="ml-auto text-slate-700 group-hover:text-gold transition-colors" />
-          </button>
-        ))}
-        {debouncedQuery.length >= 2 && !isLoading && (!data?.items || data.items.length === 0) && (
-          <div className="text-center py-8 opacity-40">
-            <p className="text-[10px] font-bold uppercase tracking-widest">Nenhum resultado</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Comparison Slot
-// ---------------------------------------------------------------------------
-
-function ComparisonSlot({
-  id,
-  profile,
-  onSelect,
-  onRemove,
-  rank,
-  isWinner
-}: {
-  id?: number;
-  profile?: any;
-  onSelect: (id: number) => void;
-  onRemove: (id: number) => void;
-  rank: number;
-  isWinner?: boolean;
-}) {
-  const [showSearch, setShowSearch] = useState(false);
-
-  return (
-    <div className={`relative flex flex-col items-center justify-center aspect-auto md:aspect-[3/4] min-h-[280px] md:min-h-0 rounded-[2.5rem] border-2 border-dashed transition-all duration-500 group ${profile
-      ? 'bg-slate-card/80 border-gold/20 shadow-2xl shadow-black/40'
-      : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-gold/20'
-      }`}>
-      {/* Botão de remover — FORA do overflow para nunca ficar atrás da imagem */}
-      {profile && (
-        <button
-          onClick={() => onRemove(id!)}
-          className="absolute -top-2 -right-2 z-30 p-2.5 bg-navy hover:bg-red-500 text-slate-400 hover:text-white rounded-full border-2 border-white/10 hover:border-red-500 transition-all hover:scale-110 active:scale-90 shadow-xl shadow-black/50"
-        >
-          <X size={14} strokeWidth={3} />
-        </button>
-      )}
-
-      {profile ? (
-        <>
-          {/* Coroa do campeão — flutuando acima do card */}
-          {isWinner && (
-            <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-30 animate-[float_2s_ease-in-out_infinite]">
-              <div className="bg-gold text-navy p-2.5 rounded-2xl shadow-xl shadow-gold/40 border-2 border-yellow-200">
-                <Crown size={22} strokeWidth={3} />
-              </div>
-            </div>
-          )}
-          <div className="w-full h-full relative p-6 flex flex-col items-center overflow-hidden rounded-[2.3rem]">
-            <div className={`relative w-full aspect-square max-w-[220px] rounded-[2rem] overflow-hidden border shadow-2xl mb-4 group-hover:scale-105 transition-transform duration-500 ${isWinner ? 'border-gold shadow-[0_0_30px_rgba(255,215,0,0.3)] ring-2 ring-gold/20' : 'border-white/10'
-              }`}>
-              <Image
-                src={profile.ultimoStatus.urlFoto}
-                alt={profile.ultimoStatus.nome}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-transparent to-transparent opacity-60"></div>
-            </div>
-
-            <div className="text-center space-y-1 w-full translate-y-0 group-hover:-translate-y-2 transition-transform">
-              {isWinner && (
-                <span className="text-[8px] font-black text-gold uppercase tracking-[0.2em] mb-1 block animate-pulse">
-                  Campeão
-                </span>
-              )}
-              <h3 className={`text-sm font-black uppercase tracking-tighter line-clamp-2 leading-tight px-2 ${isWinner ? 'text-gold' : 'text-white'}`}>
-                {profile.ultimoStatus.nome}
-              </h3>
-              <div className="flex items-center justify-center gap-2">
-                <span className="px-2 py-0.5 bg-gold/10 text-gold border border-gold/20 rounded-lg text-[9px] font-black uppercase tracking-widest">
-                  {profile.ultimoStatus.siglaPartido}
-                </span>
-                <span className="px-2 py-0.5 bg-white/5 text-slate-400 border border-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest">
-                  {profile.ultimoStatus.siglaUf}
-                </span>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center p-8 text-center space-y-5">
-          <div className="w-16 h-16 rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center text-white/20 group-hover:text-gold/40 group-hover:scale-110 transition-all duration-500 relative">
-            <User size={32} strokeWidth={1} />
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gold text-navy rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Plus size={14} strokeWidth={3} />
-            </div>
-          </div>
-          <div>
-            <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] group-hover:text-gold transition-colors">Slot #{rank}</p>
-            <p className="text-[9px] text-slate-600 font-bold uppercase mt-1">Comparar Parlamentar</p>
-          </div>
-          <button
-            onClick={() => setShowSearch(true)}
-            className="px-6 py-2.5 bg-white/5 hover:bg-gold hover:text-navy border border-white/10 hover:border-gold rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-          >
-            Adicionar
-          </button>
-        </div>
-      )}
-
-      {showSearch && (
-        <div className="absolute inset-0 z-40 rounded-[2.3rem] overflow-hidden">
-          <SlotSearchOverlay
-            onSelect={(selectedId) => {
-              onSelect(selectedId);
-              setShowSearch(false);
-            }}
-            onClose={() => setShowSearch(false)}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main Comparativo Page
-// ---------------------------------------------------------------------------
+import { useState } from 'react';
+import { useComparisonData } from '@/features/comparativo/hooks/useComparisonData';
+import { ComparisonSlot } from '@/features/comparativo/components/ComparisonSlot';
+import { Top15Ranking } from '@/features/comparativo/components/Top15Ranking';
+import { ComparisonTable } from '@/features/comparativo/components/ComparisonTable';
+import { Swords, ArrowRight, RotateCcw } from 'lucide-react';
+import { CURRENT_YEAR } from '@/features/deputado/constants';
 
 export default function ComparativoPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isComparing, setIsComparing] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
 
-  // Carregar perfis detalhados
-  const profilesQueries = useQueries({
-    queries: selectedIds.map(id => ({
-      queryKey: queryKeys.deputados.detail(id),
-      queryFn: () => fetchDeputadoById(id),
-      staleTime: 60 * 60 * 1000,
-    }))
-  });
-
-  // Carregar estatísticas acumuladas de despesas (2023-2026)
-  const expensesQueries = useQueries({
-    queries: selectedIds.flatMap(id =>
-      COMPARISON_YEARS.map(year => ({
-        queryKey: queryKeys.deputados.despesas(id, { ano: year, itens: 100 }),
-        queryFn: () => fetchDeputadoDespesas(id, { ano: year, itens: 100 }),
-        staleTime: 60 * 60 * 1000,
-      }))
-    )
-  });
-
-  // Carregar emendas acumuladas (2023-2026)
-  const emendasQueries = useQueries({
-    queries: selectedIds.flatMap(id =>
-      COMPARISON_YEARS.map(year => ({
-        queryKey: ['deputados', 'emendas', id, year],
-        queryFn: () => fetchDeputadoEmendas(id, year),
-        staleTime: 60 * 60 * 1000,
-      }))
-    )
-  });
-
-  const orgaosQueries = useQueries({
-    queries: selectedIds.map(id => ({
-      queryKey: [...queryKeys.deputados.all, 'orgaos', id, { itens: 100 }],
-      queryFn: () => fetchDeputadoOrgaos(id, { itens: 100 }),
-      staleTime: 60 * 60 * 1000,
-    }))
-  });
-
-  const beneficiosQueries = useQueries({
-    queries: selectedIds.map(id => ({
-      queryKey: ['deputados', 'beneficios', id, CURRENT_YEAR],
-      queryFn: () => fetchBeneficios(id, CURRENT_YEAR),
-      staleTime: 6 * 60 * 60 * 1000,
-    }))
-  });
-
-  // Carregar total de atos/proposições (2023-2026)
-  const proposicoesQueries = useQueries({
-    queries: selectedIds.flatMap(id =>
-      COMPARISON_YEARS.map(year => ({
-        queryKey: ['proposicao', 'totals', id, { ano: year }],
-        queryFn: () => fetchProposicaoTotals(id, { ano: year }),
-        staleTime: 6 * 60 * 60 * 1000,
-      }))
-    )
-  });
-
-  // Frequência parlamentar (ano corrente)
-  const frequenciaQueries = useQueries({
-    queries: selectedIds.map(id => ({
-      queryKey: ['deputados', 'frequencia', id, CURRENT_YEAR],
-      queryFn: () => fetchFrequencia(id, CURRENT_YEAR),
-      staleTime: 6 * 60 * 60 * 1000,
-    }))
-  });
-
-  // Consultar secretários habilitado apenas quando o nome do gabinete estiver disponível
-  const secretariosQueries = useQueries({
-    queries: selectedIds.map((id, index) => {
-      const gabineteNome = profilesQueries[index]?.data?.ultimoStatus?.gabinete?.nome;
-      return {
-        queryKey: queryKeys.deputados.secretarios(gabineteNome || ''),
-        queryFn: async () => {
-          if (!gabineteNome || !hasSupabaseConfig()) return [];
-          const { data, error } = await supabase
-            .from('secretarios')
-            .select('*')
-            .ilike('lotacao', `%${gabineteNome}%`);
-          if (error) throw new Error(error.message);
-          return data || [];
-        },
-        enabled: !!gabineteNome && hasSupabaseConfig(),
-        staleTime: 10 * 60 * 1000,
-      };
-    })
-  });
+  const { stats, allReady, winnerIds, metrics } = useComparisonData(selectedIds, selectedYear);
 
   const handleSelect = (id: number) => {
-    if (!selectedIds.includes(id) && selectedIds.length < 3) {
+    if (!selectedIds.includes(id) && selectedIds.length < 5) {
       setSelectedIds(prev => [...prev, id]);
     }
   };
 
   const handleRemove = (id: number) => {
     setSelectedIds(prev => prev.filter(item => item !== id));
+    // Se sobrar menos de 2, sai do modo comparação
+    if (selectedIds.length <= 2) {
+      setIsComparing(false);
+    }
   };
 
-  // Processar dados para comparação
-  const stats = useMemo(() => {
-    return selectedIds.map((id, index) => {
-      const profile = profilesQueries[index]?.data;
-
-      // Despesas
-      const startIdx = index * COMPARISON_YEARS.length;
-      const endIdx = startIdx + COMPARISON_YEARS.length;
-      const depExpensesQueries = expensesQueries.slice(startIdx, endIdx);
-      const totalGasto = depExpensesQueries.reduce((acc, q) => {
-        const items = q.data?.items || [];
-        return acc + items.reduce((sub, d) => sub + d.valorLiquido, 0);
-      }, 0);
-
-      // Emendas
-      const depEmendasQueries = emendasQueries.slice(startIdx, endIdx);
-      const totalEmendas = depEmendasQueries.reduce((acc, q) => {
-        return acc + (q.data?.length || 0);
-      }, 0);
-
-      // Produção Legislativa (Autoria + Relatorias, SEM atos processuais)
-      const depProposicoesQueries = proposicoesQueries.slice(startIdx, endIdx);
-      const totalAutoria = depProposicoesQueries.reduce((acc, q) => {
-        return acc + (q.data?.apiTotal || 0);
-      }, 0);
-      const totalRelatorias = depProposicoesQueries.reduce((acc, q) => {
-        return acc + (q.data?.relatadas || 0);
-      }, 0);
-
-      // Frequência
-      const freq = frequenciaQueries[index]?.data;
-      const presencasPlenario = freq?.plenario?.dias_presenca ? parseInt(freq.plenario.dias_presenca) : 0;
-      const faltasJustificadas = freq?.plenario?.dias_ausencias_justificadas ? parseInt(freq.plenario.dias_ausencias_justificadas) : 0;
-      const faltasPlenario = freq?.plenario?.dias_ausencias_nao_justificadas ? parseInt(freq.plenario.dias_ausencias_nao_justificadas) : 0;
-      // Comissões
-      const comPresenca = freq?.comissoes?.presenca ? parseInt(freq.comissoes.presenca) : 0;
-      const comFaltasJust = freq?.comissoes?.ausencias_justificadas ? parseInt(freq.comissoes.ausencias_justificadas) : 0;
-      const comFaltasNaoJust = freq?.comissoes?.ausencias_nao_justificadas ? parseInt(freq.comissoes.ausencias_nao_justificadas) : 0;
-
-      // Órgãos
-      const orgaos = orgaosQueries[index]?.data?.items?.filter(o => !o.dataFim) || [];
-
-      // Equipe
-      const listStaff = secretariosQueries[index]?.data || [];
-      const staffCount = listStaff.length;
-
-      // Benefícios (Moradia)
-      const beneficios = beneficiosQueries[index]?.data;
-      const usaImovel = beneficios?.imovel_funcional?.toLowerCase().includes("ocupa") || beneficios?.imovel_funcional?.toLowerCase().includes("faz uso");
-      const recebeAuxilio = beneficios?.auxilio_moradia?.toLowerCase().includes("recebe");
-      const housingStatus = beneficios ? (
-        usaImovel ? "Imóvel Funcional" :
-          recebeAuxilio ? "Auxílio-Moradia" : "Não utiliza"
-      ) : "—";
-      const housingType: 'imovel' | 'auxilio' | 'nenhum' | 'loading' = beneficios ? (
-        usaImovel ? 'imovel' : recebeAuxilio ? 'auxilio' : 'nenhum'
-      ) : 'loading';
-
-      const isReadyByExpenses = depExpensesQueries.every(q => !q.isLoading);
-      const isReadyByEmendas = depEmendasQueries.every(q => !q.isLoading);
-
-      return {
-        id,
-        profile,
-        totalGasto,
-        totalEmendas,
-        totalAutoria,
-        totalRelatorias,
-        presencasPlenario,
-        faltasJustificadas,
-        faltasPlenario,
-        comPresenca,
-        comFaltasJust,
-        comFaltasNaoJust,
-        staffCount,
-        housingStatus,
-        housingType,
-        numOrgaos: orgaos.length,
-        isReady: !!profile && isReadyByExpenses && isReadyByEmendas && !orgaosQueries[index].isLoading
-      };
-    });
-  }, [selectedIds, profilesQueries, expensesQueries, emendasQueries, proposicoesQueries, frequenciaQueries, orgaosQueries, secretariosQueries, beneficiosQueries]);
-
-  const allReady = stats.length > 0 && stats.every(s => s.isReady);
-  const minGasto = allReady ? Math.min(...stats.map(s => s.totalGasto)) : 0;
-  const maxOrgaos = allReady ? Math.max(...stats.map(s => s.numOrgaos)) : 0;
-  const maxEmendas = allReady ? Math.max(...stats.map(s => s.totalEmendas)) : 0;
-  const maxAutoria = allReady ? Math.max(...stats.map(s => s.totalAutoria)) : 0;
-  const maxRelatorias = allReady ? Math.max(...stats.map(s => s.totalRelatorias)) : 0;
-  const maxPresencas = allReady ? Math.max(...stats.map(s => s.presencasPlenario)) : 0;
-  const maxComPresenca = allReady ? Math.max(...stats.map(s => s.comPresenca)) : 0;
-  const minFaltas = allReady ? Math.min(...stats.map(s => s.faltasPlenario)) : 0;
-  const minStaff = allReady ? Math.min(...stats.map(s => s.staffCount)) : 0;
-
-  // Determinar o Vencedor da Batalha (Scoring com 8 métricas)
-  const winnerIds = useMemo(() => {
-    if (!allReady || stats.length < 2) return [];
-
-    const scores = stats.map(s => {
-      let points = 0;
-      if (s.totalGasto === minGasto && s.totalGasto > 0) points++;        // Menor gasto
-      if (s.numOrgaos === maxOrgaos && s.numOrgaos > 0) points++;         // Mais comissões
-      if (s.totalEmendas === maxEmendas && s.totalEmendas > 0) points++;   // Mais emendas
-      if (s.totalAutoria === maxAutoria && s.totalAutoria > 0) points++;   // Mais projetos
-      if (s.totalRelatorias === maxRelatorias && s.totalRelatorias > 0) points++; // Mais relatorias
-      if (s.presencasPlenario === maxPresencas && s.presencasPlenario > 0) points++; // Mais presença
-      if (s.faltasPlenario === minFaltas) points++;                        // Menos faltas
-      if (s.staffCount === minStaff && s.staffCount > 0) points++;         // Equipe enxuta
-      return { id: s.id, points };
-    });
-
-    const maxPoints = Math.max(...scores.map(s => s.points));
-    if (maxPoints === 0) return [];
-
-    return scores.filter(s => s.points === maxPoints).map(s => s.id);
-  }, [allReady, stats, minGasto, maxOrgaos, maxEmendas, maxAutoria, maxRelatorias, maxPresencas, minFaltas, minStaff]);
+  const handleClear = () => {
+    setSelectedIds([]);
+    setIsComparing(false);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 md:py-24 space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -467,463 +43,67 @@ export default function ComparativoPage() {
           Comparativo <span className="text-gold">Parlamentar</span>
         </h1>
         <p className="text-slate-500 text-sm font-medium">
-          Selecione até 3 deputados para comparar métricas de atuação, gastos e presença.
+          Selecione até 5 deputados para comparar métricas de atuação, gastos e presença.
         </p>
       </div>
 
-      {/* Comparison Slots Section (Estilo TudoCelular) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        {[0, 1, 2].map((idx) => (
-          <ComparisonSlot
-            key={idx}
-            rank={idx + 1}
-            id={selectedIds[idx]}
-            profile={profilesQueries[idx]?.data}
-            onSelect={handleSelect}
-            onRemove={handleRemove}
-            isWinner={winnerIds.includes(selectedIds[idx])}
-          />
-        ))}
-      </div>
-
-      {/* Conditional Content: TOP 15 or TOPICS */}
-      <div className="relative">
-        {selectedIds.length < 3 ? (
-          <div className="space-y-12 animate-in fade-in zoom-in-95 duration-700 mb-20">
-            <div className="flex items-center justify-between border-b border-white/5 pb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gold text-navy rounded-2xl flex items-center justify-center shadow-lg shadow-gold/20">
-                  <TrendingUp size={24} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Ranking de Votação</h2>
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Os 15 parlamentares mais votados nas eleições gerais de 2022</p>
-                </div>
-              </div>
-              <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-slate-400">
-                <Info size={14} className="text-gold" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Clique para comparar</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {TOP_15_DEPUTADOS.map((dep, index) => {
-                const isSelected = selectedIds.includes(dep.id);
-                return (
-                  <button
-                    key={dep.id}
-                    onClick={() => !isSelected && handleSelect(dep.id)}
-                    disabled={isSelected}
-                    className={`group relative flex items-center gap-5 p-5 bg-slate-card/40 border rounded-3xl transition-all text-left overflow-hidden active:scale-95 ${isSelected
-                      ? 'opacity-40 border-white/5 cursor-default'
-                      : 'border-white/5 hover:bg-white/5 hover:border-gold/30'
-                      }`}
-                  >
-                    <div className={`absolute top-0 left-0 w-1 h-full bg-gold transition-opacity ${isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}></div>
-
-                    <div className="relative shrink-0">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-navy border border-white/10 text-slate-500 font-black text-xs group-hover:text-gold transition-colors shrink-0">
-                        {index + 1}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-xs font-black text-white uppercase tracking-tighter group-hover:text-gold transition-colors">{dep.nome}</h4>
-                      <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{dep.partido} • {dep.uf}</p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className="text-[8px] font-black text-gold/60 uppercase tracking-widest">{formatNumber(dep.votos)} votos</span>
-                        {!isSelected && <ChevronRight size={10} className="text-slate-700 group-hover:translate-x-1 transition-transform" />}
-                      </div>
-                    </div>
-                    {!isSelected ? (
-                      <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-slate-600 group-hover:bg-gold group-hover:text-navy transition-all shadow-inner">
-                        <Plus size={16} strokeWidth={3} />
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
-                        <Check size={16} strokeWidth={3} />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+      {/* Comparison Slots Section - Dinâmico */}
+      <div className="flex flex-wrap justify-center gap-4 max-w-6xl mx-auto">
+        {selectedIds.map((id, idx) => (
+          <div key={id} className="w-[calc(50%-0.5rem)] md:w-[calc(20%-1rem)] min-w-[160px]">
+            <ComparisonSlot
+              rank={idx + 1}
+              id={id}
+              profile={stats[idx]?.profile}
+              onSelect={handleSelect}
+              onRemove={handleRemove}
+              isWinner={isComparing && winnerIds.includes(id)}
+            />
           </div>
-        ) : null}
-
-        {selectedIds.length > 0 && (
-          <div className="space-y-12 animate-in fade-in slide-in-from-top-4 duration-700">
-            <div className="flex justify-center">
-              <div className="inline-flex flex-col items-center gap-2 text-center">
-                <h2 className="text-2xl font-black text-white uppercase tracking-[0.2em]">Detalhes da Comparação</h2>
-                <div className="h-1 w-24 bg-gold rounded-full"></div>
-              </div>
-            </div>
-
-            <div className="bg-slate-card/60 rounded-[3rem] border border-white/5 shadow-2xl overflow-hidden backdrop-blur-xl">
-              {/* Tópico: Identificação */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <User className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Perfil Básico</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Nome Civil</h3>
-                  </div>
-                </div>
-                {stats.map(s => (
-                  <div key={s.id} className="p-8 flex flex-col items-center justify-center text-center border-l border-white/5">
-                    <span className="text-[11px] font-bold text-slate-300">{s.isReady ? s.profile?.nomeCivil : '—'}</span>
-                  </div>
-                ))}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-id-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-
-              {/* Tópico: Gastos */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <DollarSign className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Financeiro</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Cota Acumulada</h3>
-                  </div>
-                </div>
-                {stats.map(s => {
-                  const isWinner = allReady && s.totalGasto === minGasto && stats.length > 1 && s.totalGasto > 0;
-                  return (
-                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-emerald-500/5' : ''}`}>
-                      <div className="flex flex-col">
-                        <span className={`text-base font-black ${isWinner ? 'text-emerald-400' : 'text-white'}`}>
-                          {s.isReady ? formatCurrency(s.totalGasto) : (
-                            <div className="w-24 h-4 bg-white/5 rounded animate-pulse"></div>
-                          )}
-                        </span>
-                        {s.isReady && (
-                          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1">Total 2023-2026</span>
-                        )}
-                      </div>
-                      {isWinner && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase rounded-lg border border-emerald-500/30">
-                          Mais Econômico
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-gasto-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-              {/* Tópico: Produção Legislativa */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <Activity className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Atuação</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Comissões</h3>
-                  </div>
-                </div>
-                {stats.map(s => {
-                  const isWinner = allReady && s.numOrgaos === maxOrgaos && s.numOrgaos > 0 && stats.length > 1;
-                  return (
-                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-gold/5' : ''}`}>
-                      <span className={`text-2xl font-black ${isWinner ? 'text-gold' : 'text-white'}`}>
-                        {s.isReady ? s.numOrgaos : '—'}
-                      </span>
-                      {isWinner && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-gold/20 text-gold text-[8px] font-black uppercase rounded-lg border border-gold/30">
-                          Mais Ativo
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-atua-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-
-              {/* Tópico: Frequência Parlamentar */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <CalendarCheck className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Presença</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Frequência {CURRENT_YEAR}</h3>
-                  </div>
-                </div>
-                {stats.map(s => {
-                  const isWinner = allReady && s.presencasPlenario === maxPresencas && stats.length > 1 && s.presencasPlenario > 0;
-                  return (
-                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-amber-500/5' : ''}`}>
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col items-center">
-                            <span className={`text-2xl font-black ${isWinner ? 'text-amber-400' : 'text-white'}`}>
-                              {s.isReady ? s.presencasPlenario : '—'}
-                            </span>
-                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Presenças</span>
-                          </div>
-                          <div className="w-px h-8 bg-white/10"></div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-base font-black text-yellow-400">
-                              {s.isReady ? s.faltasJustificadas : '—'}
-                            </span>
-                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Justificadas</span>
-                          </div>
-                          <div className="w-px h-8 bg-white/10"></div>
-                          <div className="flex flex-col items-center">
-                            <span className={`text-base font-black ${s.faltasPlenario > 0 ? 'text-red-400' : 'text-white'}`}>
-                              {s.isReady ? s.faltasPlenario : '—'}
-                            </span>
-                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Faltas</span>
-                          </div>
-                        </div>
-                        <span className="text-[7px] text-slate-600 font-bold uppercase tracking-widest">Plenário • {CURRENT_YEAR}</span>
-                      </div>
-                      {isWinner && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase rounded-lg border border-amber-500/30">
-                          Mais Presente
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-freq-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-
-              {/* Tópico: Frequência Comissões */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <Users className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Presença</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Comissões {CURRENT_YEAR}</h3>
-                  </div>
-                </div>
-                {stats.map(s => {
-                  const isWinner = allReady && s.comPresenca === maxComPresenca && stats.length > 1 && s.comPresenca > 0;
-                  return (
-                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-teal-500/5' : ''}`}>
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col items-center">
-                            <span className="text-2xl font-black text-white">
-                              {s.isReady ? s.comPresenca : '—'}
-                            </span>
-                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Presenças</span>
-                          </div>
-                          <div className="w-px h-8 bg-white/10"></div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-base font-black text-yellow-400">
-                              {s.isReady ? s.comFaltasJust : '—'}
-                            </span>
-                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Justificadas</span>
-                          </div>
-                          <div className="w-px h-8 bg-white/10"></div>
-                          <div className="flex flex-col items-center">
-                            <span className={`text-base font-black ${s.comFaltasNaoJust > 0 ? 'text-red-400' : 'text-white'}`}>
-                              {s.isReady ? s.comFaltasNaoJust : '—'}
-                            </span>
-                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Faltas</span>
-                          </div>
-                        </div>
-                        <span className="text-[7px] text-slate-600 font-bold uppercase tracking-widest">Comissões • {CURRENT_YEAR}</span>
-                      </div>
-                      {isWinner && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-teal-500/20 text-teal-400 text-[8px] font-black uppercase rounded-lg border border-teal-500/30">
-                          Mais Presente
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-com-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-
-              {/* Tópico: Emendas */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <FileText className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Produção</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Emendas</h3>
-                  </div>
-                </div>
-                {stats.map(s => {
-                  const isWinner = allReady && s.totalEmendas === maxEmendas && stats.length > 1 && s.totalEmendas > 0;
-                  return (
-                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-indigo-500/5' : ''}`}>
-                      <div className="flex flex-col">
-                        <span className={`text-base font-black ${isWinner ? 'text-indigo-400' : 'text-white'}`}>
-                          {s.isReady ? `${s.totalEmendas} emendas` : '—'}
-                        </span>
-                        {s.isReady && (
-                          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1 text-center">Acumulado 2023-2026</span>
-                        )}
-                      </div>
-                      {isWinner && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase rounded-lg border border-indigo-500/30">
-                          Recordista
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-emendas-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-
-              {/* Tópico: Autoria de Projetos */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <PenTool className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Legislativo</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Autoria</h3>
-                  </div>
-                </div>
-                {stats.map(s => {
-                  const isWinner = allReady && s.totalAutoria === maxAutoria && stats.length > 1 && s.totalAutoria > 0;
-                  return (
-                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-blue-500/5' : ''}`}>
-                      <div className="flex flex-col">
-                        <span className={`text-2xl font-black ${isWinner ? 'text-blue-400' : 'text-white'}`}>
-                          {s.isReady ? s.totalAutoria : '—'}
-                        </span>
-                        <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1">Projetos de Lei • 2023-2026</span>
-                      </div>
-                      {isWinner && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[8px] font-black uppercase rounded-lg border border-blue-500/30">
-                          Mais Projetos
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-autoria-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-
-              {/* Tópico: Relatorias */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <Gavel className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Legislativo</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Relatorias</h3>
-                  </div>
-                </div>
-                {stats.map(s => {
-                  const isWinner = allReady && s.totalRelatorias === maxRelatorias && stats.length > 1 && s.totalRelatorias > 0;
-                  return (
-                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-purple-500/5' : ''}`}>
-                      <div className="flex flex-col">
-                        <span className={`text-2xl font-black ${isWinner ? 'text-purple-400' : 'text-white'}`}>
-                          {s.isReady ? s.totalRelatorias : '—'}
-                        </span>
-                        <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1">Relatados • 2023-2026</span>
-                      </div>
-                      {isWinner && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-purple-500/20 text-purple-400 text-[8px] font-black uppercase rounded-lg border border-purple-500/30">
-                          Mais Relatorias
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-relat-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-
-              {/* Tópico: Equipe */}
-              <div className="grid grid-cols-1 md:grid-cols-4 border-b border-white/5">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <Users className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Gabinete</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Equipe</h3>
-                  </div>
-                </div>
-                {stats.map(s => {
-                  const isWinner = allReady && s.staffCount === minStaff && stats.length > 1 && s.staffCount > 0;
-                  return (
-                    <div key={s.id} className={`p-8 flex flex-col items-center justify-center text-center border-l border-white/5 relative ${isWinner ? 'bg-emerald-500/5' : ''}`}>
-                      <span className={`text-base font-black ${isWinner ? 'text-emerald-400' : 'text-white'}`}>
-                        {s.isReady ? `${s.staffCount} pessoas` : '—'}
-                      </span>
-                      {isWinner && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase rounded-lg border border-emerald-500/30">
-                          Equipe Enxuta
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-equipe-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-
-              {/* Tópico: Moradia (Imóvel Funcional / Auxílio) */}
-              <div className="grid grid-cols-1 md:grid-cols-4">
-                <div className="p-8 bg-white/[0.02] flex items-center gap-4">
-                  <Building2 className="text-gold" size={24} />
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Benefício</span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tighter">Moradia em Brasília</h3>
-                  </div>
-                </div>
-                {stats.map(s => (
-                  <div key={s.id} className="p-8 flex flex-col items-center justify-center text-center border-l border-white/5">
-                    {s.isReady ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.housingType === 'imovel' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                          s.housingType === 'auxilio' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                            'bg-white/5 text-slate-500 border border-white/5'
-                          }`}>
-                          {s.housingType === 'imovel' ? <Home size={18} /> :
-                            s.housingType === 'auxilio' ? <DollarSign size={18} /> :
-                              <X size={18} />}
-                        </div>
-                        <span className={`text-[10px] font-black uppercase tracking-widest leading-relaxed ${s.housingType === 'imovel' ? 'text-emerald-400' :
-                          s.housingType === 'auxilio' ? 'text-blue-400' :
-                            'text-slate-500'
-                          }`}>
-                          {s.housingStatus}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-slate-500">—</span>
-                    )}
-                  </div>
-                ))}
-                {[...Array(3 - stats.length)].map((_, i) => (
-                  <div key={`empty-moradia-${i}`} className="p-8 border-l border-white/5 bg-black/10 opacity-20 hidden md:block"></div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-center mt-12 pb-20">
-              <button
-                onClick={() => setSelectedIds([])}
-                className="flex items-center gap-3 px-8 py-4 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 rounded-3xl transition-all active:scale-95"
-              >
-                <XCircle size={20} />
-                <span className="text-[11px] font-black uppercase tracking-widest">Limpar Comparação</span>
-              </button>
-            </div>
+        ))}
+        
+        {selectedIds.length < 5 && (
+          <div className="w-[calc(50%-0.5rem)] md:w-[calc(20%-1rem)] min-w-[160px] animate-in zoom-in-95 duration-500">
+            <ComparisonSlot
+              rank={selectedIds.length + 1}
+              onSelect={handleSelect}
+              onRemove={handleRemove}
+            />
           </div>
         )}
       </div>
 
+      {/* Botão de Ação "Comparar" - Aparece apenas quando 2+ selecionados e não comparando */}
+      {!isComparing && selectedIds.length >= 2 && (
+        <div className="flex justify-center animate-in zoom-in-95 fade-in duration-500">
+          <button
+            onClick={() => setIsComparing(true)}
+            className="group relative flex items-center gap-4 px-10 py-5 bg-gold text-navy rounded-full font-black uppercase tracking-widest overflow-hidden shadow-[0_0_40px_rgba(255,215,0,0.3)] hover:shadow-[0_0_60px_rgba(255,215,0,0.5)] transition-all hover:scale-105 active:scale-95"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] skew-x-[-20deg]"></div>
+            <Swords size={24} className="group-hover:rotate-12 transition-transform" />
+            <span className="text-lg">Comparar Agora</span>
+            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      )}
+
+      {/* Conditional Content: TOP 15 or TABLE */}
+      <div className="relative">
+        {!isComparing ? (
+          <Top15Ranking selectedIds={selectedIds} onSelect={handleSelect} />
+        ) : (
+          <ComparisonTable
+            stats={stats}
+            allReady={allReady}
+            winnerIds={winnerIds}
+            metrics={metrics}
+            onClear={handleClear}
+            selectedYear={selectedYear}
+            onYearChange={setSelectedYear}
+          />
+        )}
+      </div>
     </div>
   );
 }
