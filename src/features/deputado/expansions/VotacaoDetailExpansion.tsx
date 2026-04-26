@@ -86,7 +86,6 @@ export function VotacaoDetailExpansion({ row, deputadoId, siglaPartido }: Votaca
 
   return (
     <div className="p-6 space-y-8 animate-in fade-in duration-500">
-      {/* Resumo da Matéria */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -136,7 +135,6 @@ export function VotacaoDetailExpansion({ row, deputadoId, siglaPartido }: Votaca
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Esquerdo: Posicionamento */}
         <div className="space-y-6">
           <div className="space-y-3">
             <p className="text-xs font-black uppercase text-slate-500 tracking-widest flex items-center gap-2"><Users size={12} /> Voto Individual</p>
@@ -203,7 +201,6 @@ export function VotacaoDetailExpansion({ row, deputadoId, siglaPartido }: Votaca
           )}
         </div>
 
-        {/* Direito: Placar */}
         <div className="space-y-6">
           <div className="space-y-3">
             <p className="text-xs font-black uppercase text-slate-500 tracking-widest flex items-center gap-2"><LayoutDashboard size={12} /> Consenso da Casa</p>

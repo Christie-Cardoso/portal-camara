@@ -9,9 +9,7 @@ interface AttendanceCardProps {
   deputadoId: number;
 }
 
-/**
- * Card do Bento Grid — frequência parlamentar em plenário e comissões.
- */
+
 export function AttendanceCard({ deputadoId }: AttendanceCardProps) {
   const [year, setYear] = useState(CURRENT_YEAR);
   const { data: dynamicYears } = useAnosEleito(deputadoId);
@@ -49,7 +47,7 @@ export function AttendanceCard({ deputadoId }: AttendanceCardProps) {
         }
       `}} />
 
-      <div className="lg:col-span-3 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 lg:p-7 space-y-6 flex flex-col group/freq shadow-2xl relative overflow-hidden transition-all duration-500 hover:border-amber-500/30">
+      <div className="w-full bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-5 md:p-7 space-y-6 flex flex-col group/freq shadow-2xl relative overflow-hidden transition-all duration-500 hover:border-amber-500/30">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
@@ -84,49 +82,45 @@ export function AttendanceCard({ deputadoId }: AttendanceCardProps) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8">
               {/* Plenário */}
-              <div className="flex items-stretch gap-6 bg-white/[0.02] p-5 rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all group/plen">
-                <div className="flex flex-col gap-1 items-center justify-center px-3 border-r border-white/10 shrink-0">
+              <div className="flex items-stretch gap-4 md:gap-6 bg-white/[0.02] p-4 md:p-5 rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all group/plen">
+                <div className="flex flex-col gap-1 items-center justify-center px-2 md:px-3 border-r border-white/10 shrink-0">
                   <div className="w-1 h-8 bg-amber-500 rounded-full mb-1"></div>
                   <span className="text-[10px] font-black text-white uppercase tracking-tighter vertical-text opacity-30">PLENÁRIO</span>
                 </div>
-                <div className="flex-1 flex items-center justify-between gap-2">
-                  <div className="flex flex-col gap-1 flex-1">
+                <div className="flex-1 grid grid-cols-3 items-center gap-2">
+                  <div className="flex flex-col gap-1">
                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Presenças</span>
-                    <span className="flex items-center">{renderMetric(frequenciaCard?.plenario?.dias_presenca)}</span>
+                    <span className="flex items-center min-h-[28px]">{renderMetric(frequenciaCard?.plenario?.dias_presenca)}</span>
                   </div>
-                  <div className="w-px h-8 bg-white/5"></div>
-                  <div className="flex flex-col gap-1 flex-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justificadas</span>
-                    <span className="flex items-center">{renderMetric(frequenciaCard?.plenario?.dias_ausencias_justificadas)}</span>
+                  <div className="flex flex-col gap-1 border-l border-white/5 pl-2">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justif.</span>
+                    <span className="flex items-center min-h-[28px]">{renderMetric(frequenciaCard?.plenario?.dias_ausencias_justificadas)}</span>
                   </div>
-                  <div className="w-px h-8 bg-white/5"></div>
-                  <div className="flex flex-col gap-1 flex-1">
+                  <div className="flex flex-col gap-1 border-l border-white/5 pl-2">
                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Faltas</span>
-                    <span className="flex items-center">{renderFaltasMetric(frequenciaCard?.plenario?.dias_ausencias_nao_justificadas)}</span>
+                    <span className="flex items-center min-h-[28px]">{renderFaltasMetric(frequenciaCard?.plenario?.dias_ausencias_nao_justificadas)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Comissões */}
-              <div className="flex items-stretch gap-6 bg-white/[0.02] p-5 rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all group/com">
-                <div className="flex flex-col gap-1 items-center justify-center px-3 border-r border-white/10 shrink-0">
+              <div className="flex items-stretch gap-4 md:gap-6 bg-white/[0.02] p-4 md:p-5 rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all group/com">
+                <div className="flex flex-col gap-1 items-center justify-center px-2 md:px-3 border-r border-white/10 shrink-0">
                   <div className="w-1 h-8 bg-emerald-500 rounded-full mb-1"></div>
                   <span className="text-[10px] font-black text-white uppercase tracking-tighter vertical-text opacity-30">COMISSÕES</span>
                 </div>
-                <div className="flex-1 flex items-center justify-between gap-2">
-                  <div className="flex flex-col gap-1 flex-1">
+                <div className="flex-1 grid grid-cols-3 items-center gap-2">
+                  <div className="flex flex-col gap-1">
                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Presenças</span>
-                    <span className="flex items-center">{renderMetric(frequenciaCard?.comissoes?.presenca)}</span>
+                    <span className="flex items-center min-h-[28px]">{renderMetric(frequenciaCard?.comissoes?.presenca)}</span>
                   </div>
-                  <div className="w-px h-8 bg-white/5"></div>
-                  <div className="flex flex-col gap-1 flex-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justificadas</span>
-                    <span className="flex items-center">{renderMetric(frequenciaCard?.comissoes?.ausencias_justificadas)}</span>
+                  <div className="flex flex-col gap-1 border-l border-white/5 pl-2">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Justif.</span>
+                    <span className="flex items-center min-h-[28px]">{renderMetric(frequenciaCard?.comissoes?.ausencias_justificadas)}</span>
                   </div>
-                  <div className="w-px h-8 bg-white/5"></div>
-                  <div className="flex flex-col gap-1 flex-1">
+                  <div className="flex flex-col gap-1 border-l border-white/5 pl-2">
                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Faltas</span>
-                    <span className="flex items-center">{renderFaltasMetric(frequenciaCard?.comissoes?.ausencias_nao_justificadas)}</span>
+                    <span className="flex items-center min-h-[28px]">{renderFaltasMetric(frequenciaCard?.comissoes?.ausencias_nao_justificadas)}</span>
                   </div>
                 </div>
               </div>

@@ -34,7 +34,6 @@ const TOP_10_PARTIDOS = [
 export function RankingsSection() {
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-      {/* Coluna: Top 10 Votados */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 border-l-4 border-gold pl-4">
           <Trophy className="text-gold" size={24} />
@@ -47,18 +46,17 @@ export function RankingsSection() {
         <div className="bg-slate-card/30 border border-white/5 rounded-[2rem] overflow-hidden backdrop-blur-md">
           <div className="divide-y divide-white/5">
             {TOP_10_VOTADOS.map((dep, idx) => (
-              <Link 
-                key={dep.id} 
+              <Link
+                key={dep.id}
                 href={`/deputados/${dep.id}`}
                 className="flex items-center gap-4 p-4 hover:bg-gold/5 transition-all group"
               >
                 <div className="relative shrink-0">
-                  <div className={`w-6 h-6 absolute -top-2 -left-2 z-10 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg ${
-                    idx === 0 ? 'bg-gold text-navy' : 
-                    idx === 1 ? 'bg-slate-300 text-navy' : 
-                    idx === 2 ? 'bg-amber-700 text-white' : 
-                    'bg-navy text-slate-400 border border-white/10'
-                  }`}>
+                  <div className={`w-6 h-6 absolute -top-2 -left-2 z-10 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg ${idx === 0 ? 'bg-gold text-navy' :
+                      idx === 1 ? 'bg-slate-300 text-navy' :
+                        idx === 2 ? 'bg-amber-700 text-white' :
+                          'bg-navy text-slate-400 border border-white/10'
+                    }`}>
                     {idx + 1}
                   </div>
                   <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 group-hover:border-gold/50 transition-colors">
@@ -84,7 +82,6 @@ export function RankingsSection() {
         </div>
       </div>
 
-      {/* Coluna: Top 10 Partidos */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 border-l-4 border-blue-500 pl-4">
           <TrendingUp className="text-blue-500" size={24} />
@@ -108,9 +105,9 @@ export function RankingsSection() {
                   <span className="text-white">{partido.total} <span className="text-slate-600 font-bold text-[9px]">DEPS</span></span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                  <div 
+                  <div
                     className="h-full rounded-full transition-all duration-1000 group-hover:brightness-125"
-                    style={{ 
+                    style={{
                       width: `${percentage}%`,
                       backgroundColor: partido.cor,
                       boxShadow: `0 0 15px ${partido.cor}33`

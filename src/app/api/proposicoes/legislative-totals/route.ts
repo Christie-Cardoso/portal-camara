@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       },
-      next: { revalidate: 3600 } 
+      next: { revalidate: 3600 }
     });
 
     if (!response.ok) {
@@ -24,20 +24,13 @@ export async function GET(req: NextRequest) {
     }
 
     const html = await response.text();
-    
+
     let autoria = 0;
     let relatadas = 0;
 
-    // Lógica de extração baseada na estrutura:
-    // <a class="atuacao__quantidade" href="...autores.ideCadastro: ID...">COUNT</a>
-    // <a class="atuacao__quantidade" href="...relatores.ideCadastro: ID...">COUNT</a>
-
-    // Regex para Autoria
     const autoriaRegex = /href="[^"]*autores\.ideCadastro:\s*(\d+)[^"]*"[^>]*class="atuacao__quantidade"[^>]*>([\d.]+)</i;
-    // Regex alternativa se a ordem das classes for diferente
     const autoriaRegexAlt = /class="atuacao__quantidade"[^>]*href="[^"]*autores\.ideCadastro:\s*(\d+)[^"]*"[^>]*>([\d.]+)</i;
 
-    // Regex para Relatadas
     const relatoriaRegex = /href="[^"]*relatores\.ideCadastro:\s*(\d+)[^"]*"[^>]*class="atuacao__quantidade"[^>]*>([\d.]+)</i;
     const relatoriaRegexAlt = /class="atuacao__quantidade"[^>]*href="[^"]*relatores\.ideCadastro:\s*(\d+)[^"]*"[^>]*>([\d.]+)</i;
 

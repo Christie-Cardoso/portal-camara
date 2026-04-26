@@ -10,12 +10,10 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // Fecha o menu ao mudar de rota
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
 
-  // Impede o scroll quando o menu está aberto
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -33,11 +31,10 @@ export function Navbar() {
 
   return (
     <nav className={`
-      fixed top-0 w-full z-[100] border-b border-white/5 transition-all duration-300
+      fixed top-0 w-full z-[100] border-b border-white/5
       ${isOpen ? "bg-[#020617]" : "bg-navy/80 backdrop-blur-lg"}
     `}>
       <div className="max-w-7xl mx-auto px-4 md:px-6 h-24 flex items-center justify-between">
-        {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2 md:gap-3 group shrink-0">
           <Image
             src="/logo.png"
@@ -53,7 +50,6 @@ export function Navbar() {
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <Link
@@ -67,7 +63,6 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* Mobile Menu Toggle */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="md:hidden p-2 text-slate-300 hover:text-gold transition-colors cursor-pointer"
@@ -77,10 +72,9 @@ export function Navbar() {
         </button>
       </div>
 
-      {/* Mobile Menu Overlay */}
       <div className={`
-        fixed inset-0 top-24 bg-[#020617] z-[90] transition-all duration-300 md:hidden
-        ${isOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full pointer-events-none"}
+        fixed inset-0 top-24 bg-[#020617] z-[90] md:hidden
+        ${isOpen ? "block" : "hidden"}
       `}>
         <div className="flex flex-col p-6 space-y-4 h-full">
           {navLinks.map((link) => (

@@ -9,9 +9,7 @@ interface DeputadoSidebarProps {
   dep: any;
 }
 
-/**
- * Sidebar fixa com foto, identificação, bio, gabinete e redes sociais do deputado.
- */
+
 export function DeputadoSidebar({ dep }: DeputadoSidebarProps) {
   const status = dep.ultimoStatus;
   const gabinete = status.gabinete;
@@ -19,15 +17,13 @@ export function DeputadoSidebar({ dep }: DeputadoSidebarProps) {
   return (
     <aside className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-8 space-y-6">
       <div className="bg-navy/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-8 space-y-8 overflow-hidden relative shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
-        {/* Efeito de iluminação premium */}
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-gold/5 to-transparent pointer-events-none"></div>
         <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 blur-[60px] -mr-16 -mt-16 rounded-full"></div>
 
-        {/* Foto de Perfil Premium */}
         <div className="relative group/avatar flex flex-col items-center">
           <div className="relative">
             <div className="absolute inset-0 bg-gold/30 rounded-[3rem] blur-2xl opacity-0 group-hover/avatar:opacity-100 transition-all duration-700 scale-90 group-hover/avatar:scale-100"></div>
-            <div className="relative w-52 h-52 rounded-[3.5rem] p-1.5 bg-gradient-to-br from-gold/50 via-white/5 to-navy border border-white/10 shadow-2xl z-10 overflow-hidden group-hover/avatar:translate-y-[-4px] transition-transform duration-500">
+            <div className="relative w-40 h-40 md:w-52 md:h-52 rounded-[3rem] md:rounded-[3.5rem] p-1.5 bg-gradient-to-br from-gold/50 via-white/5 to-navy border border-white/10 shadow-2xl z-10 overflow-hidden group-hover/avatar:translate-y-[-4px] transition-transform duration-500">
               <div className="w-full h-full rounded-[3rem] overflow-hidden relative">
                 <Image
                   src={status.urlFoto}
@@ -50,7 +46,6 @@ export function DeputadoSidebar({ dep }: DeputadoSidebarProps) {
           </div>
         </div>
 
-        {/* Identificação Principal */}
         <div className="text-center space-y-4 pt-4 relative z-10">
           <div className="space-y-1">
             <h1 className="text-3xl font-black text-white tracking-tighter leading-[0.9] bg-gradient-to-b from-white via-white to-white/70 bg-clip-text">
@@ -88,7 +83,6 @@ export function DeputadoSidebar({ dep }: DeputadoSidebarProps) {
 
         <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent w-full"></div>
 
-        {/* Informações Biográficas */}
         <div className="space-y-4 px-2">
           <div className="flex items-center gap-4 group/bio">
             <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-500 group-hover/bio:text-gold group-hover/bio:bg-gold/10 transition-all duration-300">
@@ -113,7 +107,6 @@ export function DeputadoSidebar({ dep }: DeputadoSidebarProps) {
 
         <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent w-full"></div>
 
-        {/* Contato Gabinete */}
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Gabinete</p>
@@ -144,7 +137,6 @@ export function DeputadoSidebar({ dep }: DeputadoSidebarProps) {
           </div>
         </div>
 
-        {/* Redes Sociais */}
         {dep.redeSocial?.length > 0 && (
           <div className="pt-2 px-2">
             <div className="flex flex-wrap gap-3">

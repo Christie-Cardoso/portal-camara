@@ -12,9 +12,6 @@ interface StaffCardProps {
   siglaUf: string;
 }
 
-/**
- * Card do Bento Grid — equipe de gabinete (assessores).
- */
 export function StaffCard({ deputadoId, deputadoNome, siglaUf }: StaffCardProps) {
   const { data: secretarios, isLoading } = useSecretarios(deputadoNome);
   const { data: beneficiosCard } = useBeneficios(deputadoId, CURRENT_YEAR);
@@ -40,7 +37,7 @@ export function StaffCard({ deputadoId, deputadoNome, siglaUf }: StaffCardProps)
   }, [secretarios, beneficiosCard?.pessoal_gabinete_nomes]);
 
   return (
-    <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 space-y-6 flex flex-col group/equipe shadow-2xl relative overflow-hidden">
+    <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-8 space-y-6 flex flex-col group/equipe shadow-2xl relative overflow-hidden">
       <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl opacity-0 group-hover/equipe:opacity-100 transition-opacity"></div>
 
       <div className="flex items-center justify-between relative z-10">
@@ -59,7 +56,7 @@ export function StaffCard({ deputadoId, deputadoNome, siglaUf }: StaffCardProps)
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-purple-400 animate-spin" /></div>
         ) : filteredSecretarios && filteredSecretarios.length > 0 ? (
-          <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar h-[540px]">
+          <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar h-[400px] md:h-[540px]">
             {filteredSecretarios.map((sec, i) => (
               <div key={`${sec.nome}-${i}`} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-purple-500/30 hover:bg-white/10 transition-all group/item relative overflow-hidden shadow-sm">
                 <div className="flex justify-between items-start gap-2 mb-1">

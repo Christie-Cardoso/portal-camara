@@ -4,15 +4,9 @@ interface YearSelectorProps {
   value: number;
   onChange: (year: number) => void;
   years: number[];
-  /** Cor do ícone do calendário (classe Tailwind). Default: text-indigo-400 */
   accentColor?: string;
-  /** ID único para as options */
   keyPrefix?: string;
 }
-
-/**
- * Seletor de ano reutilizável com design premium.
- */
 export function YearSelector({
   value,
   onChange,

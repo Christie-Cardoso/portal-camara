@@ -1,11 +1,6 @@
-/**
- * Constantes específicas do módulo de detalhes do Deputado.
- */
-
 export const CURRENT_YEAR = 2026;
 
-export const YEARS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i); // 2026, 2025, 2024, 2023
-
+export const YEARS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
 export const MONTHS = [
   { value: 'all', label: 'Todos os meses' },
   { value: '01', label: 'Janeiro' },

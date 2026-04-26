@@ -23,7 +23,6 @@ export default function ComparativoPage() {
 
   const handleRemove = (id: number) => {
     setSelectedIds(prev => prev.filter(item => item !== id));
-    // Se sobrar menos de 2, sai do modo comparação
     if (selectedIds.length <= 2) {
       setIsComparing(false);
     }
@@ -37,7 +36,6 @@ export default function ComparativoPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 md:py-24 space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
 
-      {/* Header */}
       <div className="text-center space-y-3 max-w-2xl mx-auto">
         <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase">
           Comparativo <span className="text-gold">Parlamentar</span>
@@ -47,7 +45,6 @@ export default function ComparativoPage() {
         </p>
       </div>
 
-      {/* Comparison Slots Section - Dinâmico */}
       <div className="flex flex-wrap justify-center gap-4 max-w-6xl mx-auto">
         {selectedIds.map((id, idx) => (
           <div key={id} className="w-[calc(50%-0.5rem)] md:w-[calc(20%-1rem)] min-w-[160px]">
@@ -61,7 +58,7 @@ export default function ComparativoPage() {
             />
           </div>
         ))}
-        
+
         {selectedIds.length < 5 && (
           <div className="w-[calc(50%-0.5rem)] md:w-[calc(20%-1rem)] min-w-[160px] animate-in zoom-in-95 duration-500">
             <ComparisonSlot
@@ -73,7 +70,6 @@ export default function ComparativoPage() {
         )}
       </div>
 
-      {/* Botão de Ação "Comparar" - Aparece apenas quando 2+ selecionados e não comparando */}
       {!isComparing && selectedIds.length >= 2 && (
         <div className="flex justify-center animate-in zoom-in-95 fade-in duration-500">
           <button
@@ -88,7 +84,6 @@ export default function ComparativoPage() {
         </div>
       )}
 
-      {/* Conditional Content: TOP 15 or TABLE */}
       <div className="relative">
         {!isComparing ? (
           <Top15Ranking selectedIds={selectedIds} onSelect={handleSelect} />

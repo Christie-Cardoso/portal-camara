@@ -27,7 +27,7 @@ export function SlotSearchOverlay({ onSelect, onClose }: SlotSearchOverlayProps)
   return (
     <div className="absolute inset-0 z-50 bg-navy/95 backdrop-blur-xl p-4 flex flex-col animate-in fade-in zoom-in-95 duration-200">
       <div className="flex items-center mb-6 px-1">
-        <div className="w-8" /> {/* Espaçador para equilibrar o centro */}
+        <div className="w-8" />
         <span className="flex-1 text-[10px] font-black uppercase tracking-widest text-gold text-center">
           Buscar Parlamentar
         </span>

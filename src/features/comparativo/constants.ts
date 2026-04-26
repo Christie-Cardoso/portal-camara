@@ -1,7 +1,6 @@
 export const CURRENT_YEAR = 2026;
 export const COMPARISON_YEARS = [2023, 2024, 2025, 2026];
 
-// Dados estáticos dos parlamentares mais votados / famosos em exercício (57ª Legislatura)
 export const TOP_15_DEPUTADOS = [
   { id: 209787, nome: "Nikolas Ferreira", partido: "PL", uf: "MG", votos: 1492047, rank: 1 },
   { id: 204534, nome: "Tabata Amaral", partido: "PSB", uf: "SP", votos: 243037, rank: 2 },

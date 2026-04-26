@@ -1,11 +1,5 @@
 "use client";
 
-import { formatCurrency } from '@/lib/formatters';
-import { MapPin } from 'lucide-react';
-
-/**
- * Detalhes expandidos de uma emenda orçamentária.
- */
 export function EmendaDetailExpansion({ row }: { row: any }) {
   const emenda = row.original;
   return (

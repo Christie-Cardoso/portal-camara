@@ -3,10 +3,6 @@
 import Link from 'next/link';
 import { useDeputado } from '@/hooks/use-camara';
 
-/**
- * Card que exibe informações do relator de uma proposição.
- * Recebe a URI do relator e busca seus dados automaticamente.
- */
 export function ReporterInfo({ uri }: { uri: string }) {
   const reporterId = parseInt(uri.split('/').pop() || '0');
   const { data: dep, isLoading } = useDeputado(reporterId);

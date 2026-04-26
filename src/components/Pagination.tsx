@@ -9,46 +9,45 @@ interface PaginationProps {
   onItensPerPageChange?: (itens: number) => void;
 }
 
-export function Pagination({ 
-  page, 
-  totalPaginas, 
-  hasNext, 
-  onPageChange, 
-  itensPerPage, 
-  onItensPerPageChange 
+export function Pagination({
+  page,
+  totalPaginas,
+  hasNext,
+  onPageChange,
+  itensPerPage,
+  onItensPerPageChange
 }: PaginationProps) {
   if (page === 1 && !hasNext && !onItensPerPageChange) return null;
 
-  // Generate page numbers to show
   const getPageRange = () => {
     if (!totalPaginas) return [page];
-    
+
     const range: (number | string)[] = [];
-    const delta = 2; // How many pages to show around current
-    
+    const delta = 2;
+
     for (let i = 1; i <= Math.min(totalPaginas, 3); i++) {
       range.push(i);
     }
-    
+
     if (page > 5) {
       range.push('...');
     }
-    
+
     const start = Math.max(4, page - delta);
     const end = Math.min(totalPaginas - 3, page + delta);
-    
+
     for (let i = start; i <= end; i++) {
-        if (!range.includes(i)) range.push(i);
+      if (!range.includes(i)) range.push(i);
     }
-    
+
     if (page < totalPaginas - 4) {
       range.push('...');
     }
-    
+
     for (let i = Math.max(totalPaginas - 2, 1); i <= totalPaginas; i++) {
-        if (!range.includes(i)) range.push(i);
+      if (!range.includes(i)) range.push(i);
     }
-    
+
     return range;
   };
 
@@ -56,12 +55,11 @@ export function Pagination({
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-12 border-t border-white/5 mt-8">
-      {/* Items per page selector */}
       {onItensPerPageChange && (
         <div className="flex items-center gap-3">
           <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">Mostrar</span>
-          <select 
-            value={itensPerPage} 
+          <select
+            value={itensPerPage}
             onChange={(e) => onItensPerPageChange(Number(e.target.value))}
             className="bg-navy border border-white/10 rounded-xl px-4 py-2 text-sm text-gold font-black focus:outline-none focus:ring-2 focus:ring-gold/50 appearance-none cursor-pointer hover:border-gold/30 transition-all"
           >
@@ -73,19 +71,18 @@ export function Pagination({
         </div>
       )}
 
-      {/* Numeric Pagination */}
       <div className="flex items-center gap-1.5">
-        <button 
-          onClick={() => onPageChange(1)} 
+        <button
+          onClick={() => onPageChange(1)}
           disabled={page === 1}
           className="p-2 rounded-lg bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
           title="Primeira página"
         >
           <ChevronsLeft size={16} />
         </button>
-        
-        <button 
-          onClick={() => onPageChange(page - 1)} 
+
+        <button
+          onClick={() => onPageChange(page - 1)}
           disabled={page === 1}
           className="p-2 rounded-lg bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all mr-2"
         >
@@ -98,11 +95,10 @@ export function Pagination({
               <button
                 key={idx}
                 onClick={() => onPageChange(p)}
-                className={`w-10 h-10 rounded-xl font-bold text-sm transition-all border ${
-                  page === p 
-                  ? 'bg-gold text-navy border-gold shadow-[0_0_15px_rgba(234,179,8,0.3)]' 
-                  : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
-                }`}
+                className={`w-10 h-10 rounded-xl font-bold text-sm transition-all border ${page === p
+                    ? 'bg-gold text-navy border-gold shadow-[0_0_15px_rgba(234,179,8,0.3)]'
+                    : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
+                  }`}
               >
                 {p}
               </button>
@@ -112,8 +108,8 @@ export function Pagination({
           ))}
         </div>
 
-        <button 
-          onClick={() => onPageChange(page + 1)} 
+        <button
+          onClick={() => onPageChange(page + 1)}
           disabled={!hasNext}
           className="p-2 rounded-lg bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all ml-2"
         >
@@ -121,8 +117,8 @@ export function Pagination({
         </button>
 
         {totalPaginas && (
-          <button 
-            onClick={() => onPageChange(totalPaginas)} 
+          <button
+            onClick={() => onPageChange(totalPaginas)}
             disabled={page === totalPaginas}
             className="p-2 rounded-lg bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
             title="Última página"

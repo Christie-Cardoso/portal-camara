@@ -29,7 +29,6 @@ export function ComparisonSlot({
       ? 'bg-slate-card/80 border-gold/20 shadow-2xl shadow-black/40'
       : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-gold/30 hover:shadow-lg hover:shadow-gold/5'
       }`}>
-      {/* Botão de remover — FORA do overflow para nunca ficar atrás da imagem */}
       {profile && (
         <button
           onClick={() => onRemove(id!)}
@@ -41,7 +40,6 @@ export function ComparisonSlot({
 
       {profile ? (
         <>
-          {/* Coroa do campeão — flutuando acima do card */}
           {isWinner && (
             <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-30 animate-[float_2s_ease-in-out_infinite]">
               <div className="bg-gold text-navy p-2.5 rounded-2xl shadow-xl shadow-gold/40 border-2 border-yellow-200">

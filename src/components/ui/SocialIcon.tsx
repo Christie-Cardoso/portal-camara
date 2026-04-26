@@ -1,8 +1,5 @@
 import { ExternalLink } from 'lucide-react';
 
-/**
- * Retorna o ícone SVG correto para uma URL de rede social.
- */
 export function getSocialIcon(url: string) {
   const domain = url.toLowerCase();
 

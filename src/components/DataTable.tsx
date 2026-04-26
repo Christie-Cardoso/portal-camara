@@ -9,7 +9,6 @@ import {
   ColumnDef,
   Row,
 } from '@tanstack/react-table';
-import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
@@ -52,9 +51,9 @@ export function DataTable<TData>({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>
@@ -63,10 +62,9 @@ export function DataTable<TData>({
           <tbody className="divide-y divide-white/5">
             {table.getRowModel().rows.map((row) => (
               <Fragment key={row.id}>
-                <tr 
-                  className={`group transition-all hover:bg-white/[0.03] cursor-pointer ${
-                    row.getIsExpanded() ? 'bg-white/[0.05]' : ''
-                  }`}
+                <tr
+                  className={`group transition-all hover:bg-white/[0.03] cursor-pointer ${row.getIsExpanded() ? 'bg-white/[0.05]' : ''
+                    }`}
                   onClick={() => row.getCanExpand() && row.toggleExpanded()}
                 >
                   {row.getVisibleCells().map((cell) => (
@@ -89,7 +87,7 @@ export function DataTable<TData>({
           </tbody>
         </table>
       </div>
-      
+
       {data.length === 0 && !isLoading && (
         <div className="py-12 text-center text-slate-500 text-sm">
           Nenhum dado encontrado.

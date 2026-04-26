@@ -1,0 +1,24 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-frequencia",
+      "schedule": "0 2 * * 1"
+    },
+    {
+      "path": "/api/cron/sync-beneficios",
+      "schedule": "0 3 * * 1"
+    },
+    {
+      "path": "/api/cron/sync-emendas",
+      "schedule": "0 4 * * 1"
+    },
+    {
+      "path": "/api/cron/sync-secretarios",
+      "schedule": "0 5 * * 1"
+    },
+    {
+      "path": "/api/cron/sync-remuneracao",
+      "schedule": "0 6 * * 1"
+    }
+  ]
+}
