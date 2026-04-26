@@ -65,18 +65,24 @@ src/
 │   │   └── [id]/                     #   │   └── Perfil detalhado (orquestrador fino)
 │   └── sobre/                        #   └── Página sobre o projeto
 │
-├── features/                         # Módulos por Domínio de Negócio
-│   └── deputado/
-│       ├── components/               #   ├── DeputadoSidebar, BentoGrid, 6 Cards
-│       ├── tabs/                     #   ├── Despesas, Frentes, Votações, Trabalho...
-│       ├── expansions/               #   ├── Detalhes expandidos (votação, proposição)
-│       ├── columns/                  #   ├── Definições de colunas TanStack Table
-│       └── constants.ts              #   └── Constantes do domínio
+├── features/                         # Módulos por Domínio de Negócio (Arquitetura Modular)
+│   ├── home/                         #   ├── Módulo Página Inicial
+│   │   ├── components/               #   │   ├── Hero, RankingsSection, ParliamentaryCosts...
+│   │   └── constants.ts              #   │
+│   ├── comparativo/                  #   ├── Módulo Batalha de Gigantes
+│   │   ├── components/               #   │   ├── ComparisonTable, ComparisonSlot, SearchOverlay...
+│   │   ├── hooks/                    #   │   ├── useComparisonData (Lógica de Pontuação)
+│   │   └── constants.ts              #   │
+│   └── deputado/                     #   ├── Módulo Perfil do Parlamentar
+│       ├── components/               #   │   ├── DeputadoSidebar, BentoGrid, 6 Cards
+│       ├── tabs/                     #   │   ├── Despesas, Frentes, Votações, Trabalho...
+│       ├── expansions/               #   │   ├── Detalhes expandidos (votação, proposição)
+│       └── columns/                  #   │   ├── Definições de colunas TanStack Table
 │
-├── components/                       # UI Primitivos Reutilizáveis
-│   ├── ui/                           #   ├── SocialIcon, YearSelector
+├── components/                       # UI Primitivos Reutilizáveis (Design System)
+│   ├── ui/                           #   ├── Botões, Inputs, Badges customizados
 │   ├── DataTable.tsx                 #   ├── Tabela genérica (TanStack Table)
-│   ├── ExpensesDonutChart.tsx        #   ├── Gráfico donut (Recharts)
+│   └── ExpensesDonutChart.tsx        #   └── Gráfico donut (Recharts)
 │   ├── Pagination.tsx                #   └── Paginação reutilizável
 │   └── ...
 │

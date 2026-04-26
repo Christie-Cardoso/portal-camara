@@ -27,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   width={180} 
                   height={48} 
                   className="h-12 w-auto object-contain transition-transform group-hover:scale-105"
+                  style={{ width: 'auto' }}
                   priority
                 />
                 <span className="text-2xl font-black tracking-tighter bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
