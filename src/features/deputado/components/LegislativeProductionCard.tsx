@@ -10,9 +10,6 @@ interface LegislativeProductionCardProps {
   deputadoId: number;
 }
 
-/**
- * Card do Bento Grid — produção legislativa com contagem por tipo.
- */
 export function LegislativeProductionCard({ deputadoId }: LegislativeProductionCardProps) {
   const [year, setYear] = useState(CURRENT_YEAR);
   const { data: dynamicYears } = useAnosEleito(deputadoId);
@@ -20,14 +17,14 @@ export function LegislativeProductionCard({ deputadoId }: LegislativeProductionC
   const { data: totals, isLoading } = useProposicaoTotals(deputadoId, { ano: year });
 
   return (
-    <div className="md:col-span-2 lg:col-span-3 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 lg:p-10 relative overflow-hidden group/prod flex flex-col h-full shadow-2xl">
+    <div className="w-full bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-8 lg:p-10 relative overflow-hidden group/prod flex flex-col h-full shadow-2xl">
       <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-500/5 rounded-full blur-[80px] group-hover/prod:bg-blue-500/10 transition-all duration-700"></div>
       <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-transparent via-gold-500/20 to-transparent opacity-30"></div>
 
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10 mb-8">
         <div className="flex flex-col">
-          <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2">Produção Legislativa</h3>
-          <p className="text-slate-500 text-sm font-medium">Histórico acumulado de proposições e atos</p>
+          <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2">Produção Legislativa</h3>
+          <p className="text-slate-500 text-xs md:text-sm font-medium">Histórico acumulado de proposições e atos</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-2xl transition-all hover:border-blue-500/40 hover:bg-white/10 group/sel shadow-inner">
@@ -45,7 +42,6 @@ export function LegislativeProductionCard({ deputadoId }: LegislativeProductionC
         </div>
       </div>
 
-      {/* Totais */}
       <div className="flex items-center gap-3 flex-nowrap overflow-x-auto no-scrollbar pb-4 relative z-10">
         <div className="flex items-center gap-3 px-4 py-3 bg-gold/10 border border-gold/20 rounded-2xl whitespace-nowrap group/stat transition-all hover:bg-gold/20">
           <FileCheck size={18} className="text-gold" />
@@ -75,7 +71,6 @@ export function LegislativeProductionCard({ deputadoId }: LegislativeProductionC
         </div>
       </div>
 
-      {/* Grid de tipos */}
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar flex-1 relative z-10">
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 animate-pulse">
@@ -101,17 +96,16 @@ export function LegislativeProductionCard({ deputadoId }: LegislativeProductionC
         )}
       </div>
 
-      {/* Explicação */}
-      <div className="mt-8 pt-6 border-t border-white/5 flex items-start gap-5 bg-white/[0.03] p-6 rounded-[2rem] relative z-10">
-        <div className="w-12 h-12 bg-indigo-500/15 rounded-[1rem] flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
-          <Info size={24} />
+      <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-start gap-4 md:gap-5 bg-white/[0.03] p-5 md:p-6 rounded-[2rem] relative z-10">
+        <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-500/15 rounded-[0.8rem] md:rounded-[1rem] flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
+          <Info size={20} className="md:w-6 md:h-6" />
         </div>
         <div className="space-y-1.5 flex-1">
-          <h4 className="text-white font-black uppercase text-xs tracking-widest flex items-center gap-2">
+          <h4 className="text-white font-black uppercase text-[10px] md:text-xs tracking-widest flex flex-wrap items-center gap-2">
             Por que os totais divergem?
-            <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded-md text-[9px]">Exclusivo Portal Câmara</span>
+            <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded-md text-[8px]">Exclusivo Portal Câmara</span>
           </h4>
-          <p className="text-slate-400 text-[10px] font-medium leading-relaxed italic">
+          <p className="text-slate-400 text-[9px] md:text-[10px] font-medium leading-relaxed italic">
             A diferença de <span className="text-white font-bold">{(totals?.total || 0) - (totals?.apiTotal || 0)} atos</span> refere-se a formalidades processuais e administrativas (como retirada de pauta, requerimentos formais ou correções de texto).
             A lista de <span className="text-white font-bold">Projetos</span> exibe apenas proposições de mérito reais (Leis, PECs, etc), enquanto o total da Câmara engloba toda a movimentação burocrática parlamentar.
           </p>

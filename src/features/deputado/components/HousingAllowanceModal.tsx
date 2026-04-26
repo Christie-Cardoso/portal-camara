@@ -11,9 +11,6 @@ interface HousingAllowanceModalProps {
   onClose: () => void;
 }
 
-/**
- * Modal de detalhamento do auxílio-moradia com tabela mensal.
- */
 export function HousingAllowanceModal({ deputadoId, onClose }: HousingAllowanceModalProps) {
   const [year, setYear] = useState(new Date().getFullYear());
   const { data: dynamicYears } = useAnosEleito(deputadoId);
@@ -23,7 +20,6 @@ export function HousingAllowanceModal({ deputadoId, onClose }: HousingAllowanceM
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/90 backdrop-blur-xl animate-in fade-in duration-300">
       <div className="bg-slate-card border border-white/10 rounded-[3rem] w-full max-w-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 flex flex-col md:flex-row">
-        {/* Lado Esquerdo: Info Regulamentada */}
         <div className="md:w-5/12 p-10 bg-gradient-to-br from-indigo-500/10 to-blue-500/5 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none"><Home size={200} /></div>
           <div className="relative z-10 space-y-6">
@@ -50,7 +46,6 @@ export function HousingAllowanceModal({ deputadoId, onClose }: HousingAllowanceM
           </div>
         </div>
 
-        {/* Lado Direito: Tabela de Valores */}
         <div className="md:w-7/12 p-10 flex flex-col bg-slate-card/50 backdrop-blur-lg">
           <div className="flex items-center justify-between mb-6">
             <div className="flex flex-col gap-1">

@@ -16,7 +16,6 @@ import { supabase, hasSupabaseConfig } from '@/lib/supabase';
 import { CURRENT_YEAR, COMPARISON_YEARS } from '../constants';
 
 export function useComparisonData(selectedIds: number[], selectedYear: number = CURRENT_YEAR) {
-  // Carregar perfis detalhados
   const profilesQueries = useQueries({
     queries: selectedIds.map(id => ({
       queryKey: queryKeys.deputados.detail(id),
@@ -109,7 +108,6 @@ export function useComparisonData(selectedIds: number[], selectedYear: number = 
     return selectedIds.map((id, index) => {
       const profile = profilesQueries[index]?.data;
 
-      // Despesas
       const startIdx = index * COMPARISON_YEARS.length;
       const endIdx = startIdx + COMPARISON_YEARS.length;
       const depExpensesQueries = expensesQueries.slice(startIdx, endIdx);
@@ -118,13 +116,11 @@ export function useComparisonData(selectedIds: number[], selectedYear: number = 
         return acc + items.reduce((sub, d) => sub + d.valorLiquido, 0);
       }, 0);
 
-      // Emendas
       const depEmendasQueries = emendasQueries.slice(startIdx, endIdx);
       const totalEmendas = depEmendasQueries.reduce((acc, q) => {
         return acc + (q.data?.length || 0);
       }, 0);
 
-      // Produção Legislativa (Autoria + Relatorias, SEM atos processuais)
       const depProposicoesQueries = proposicoesQueries.slice(startIdx, endIdx);
       const totalAutoria = depProposicoesQueries.reduce((acc, q) => {
         return acc + (q.data?.apiTotal || 0);
@@ -133,24 +129,19 @@ export function useComparisonData(selectedIds: number[], selectedYear: number = 
         return acc + (q.data?.relatadas || 0);
       }, 0);
 
-      // Frequência
       const freq = frequenciaQueries[index]?.data;
       const presencasPlenario = freq?.plenario?.dias_presenca ? parseInt(freq.plenario.dias_presenca) : 0;
       const faltasJustificadas = freq?.plenario?.dias_ausencias_justificadas ? parseInt(freq.plenario.dias_ausencias_justificadas) : 0;
       const faltasPlenario = freq?.plenario?.dias_ausencias_nao_justificadas ? parseInt(freq.plenario.dias_ausencias_nao_justificadas) : 0;
-      // Comissões
       const comPresenca = freq?.comissoes?.presenca ? parseInt(freq.comissoes.presenca) : 0;
       const comFaltasJust = freq?.comissoes?.ausencias_justificadas ? parseInt(freq.comissoes.ausencias_justificadas) : 0;
       const comFaltasNaoJust = freq?.comissoes?.ausencias_nao_justificadas ? parseInt(freq.comissoes.ausencias_nao_justificadas) : 0;
 
-      // Órgãos
       const orgaos = orgaosQueries[index]?.data?.items?.filter(o => !o.dataFim) || [];
 
-      // Equipe
       const listStaff = secretariosQueries[index]?.data || [];
       const staffCount = listStaff.length;
 
-      // Benefícios (Moradia)
       const beneficios = beneficiosQueries[index]?.data;
       const imovelText = beneficios?.imovel_funcional?.toLowerCase() || '';
       const auxilioText = beneficios?.auxilio_moradia?.toLowerCase() || '';
@@ -219,10 +210,10 @@ export function useComparisonData(selectedIds: number[], selectedYear: number = 
       if (s.totalEmendas === maxEmendas && s.totalEmendas > 0) points++;
       if (s.totalAutoria === maxAutoria && s.totalAutoria > 0) points++;
       if (s.totalRelatorias === maxRelatorias && s.totalRelatorias > 0) points++;
-      if (presencaLiquida === maxPresencaLiquida && presencaLiquida > 0) points++; // Novo critério balanceado
+      if (presencaLiquida === maxPresencaLiquida && presencaLiquida > 0) points++;
       if (s.faltasPlenario === minFaltas) points++;
       if (s.staffCount === minStaff && s.staffCount > 0) points++;
-      if (s.housingType === 'nenhum') points++; // Vencedor por não usar moradia
+      if (s.housingType === 'nenhum') points++;
       return { id: s.id, points };
     });
 

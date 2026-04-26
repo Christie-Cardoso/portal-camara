@@ -1,14 +1,5 @@
-// ---------------------------------------------------------------------------
-// Câmara dos Deputados API Client – Pure fetch functions
-// Proxy URL via next.config.ts rewrites: /api-camara
-// ---------------------------------------------------------------------------
-
 const IS_BROWSER = typeof window !== 'undefined';
 const BASE_URL = IS_BROWSER ? '/api-camara' : 'https://dadosabertos.camara.leg.br/api/v2';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export interface Deputado {
   id: number;
@@ -201,10 +192,6 @@ export interface EmendaOrcamentaria {
   localidade?: string;
 }
 
-// ---------------------------------------------------------------------------
-// Generic fetcher
-// ---------------------------------------------------------------------------
-
 async function camaraFetchWithHeaders<T>(url: string): Promise<{ data: T; totalItems?: number }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
@@ -220,22 +207,21 @@ async function camaraFetchWithHeaders<T>(url: string): Promise<{ data: T; totalI
     }
 
     const data = await response.json();
-    
-    // Extração robusta de headers (ignora case)
+
     let totalCount: string | null = null;
     response.headers.forEach((value, key) => {
       if (key.toLowerCase() === 'x-total-count') {
         totalCount = value;
       }
     });
-    
+
     if (totalCount) {
       console.log(`[Câmara API] ${url} -> totalItems: ${totalCount}`);
     }
 
-    return { 
-      data, 
-      totalItems: totalCount ? parseInt(totalCount) : undefined 
+    return {
+      data,
+      totalItems: totalCount ? parseInt(totalCount) : undefined
     };
   } finally {
     clearTimeout(timer);
@@ -243,7 +229,6 @@ async function camaraFetchWithHeaders<T>(url: string): Promise<{ data: T; totalI
 }
 
 function buildUrl(path: string, params: Record<string, any> = {}): string {
-  // Use window.location.origin if in browser to handle relative BASE_URL
   const base = IS_BROWSER ? window.location.origin + BASE_URL : BASE_URL;
   const url = new URL(`${base}${path}`);
   for (const [key, value] of Object.entries(params)) {
@@ -257,10 +242,6 @@ function buildUrl(path: string, params: Record<string, any> = {}): string {
   }
   return url.toString();
 }
-
-// ---------------------------------------------------------------------------
-// DEPUTADOS
-// ---------------------------------------------------------------------------
 
 interface DeputadosParams {
   nome?: string;
@@ -307,10 +288,6 @@ export async function fetchDeputadoById(id: number): Promise<DeputadoDetalhado |
   }
 }
 
-// ---------------------------------------------------------------------------
-// DESPESAS
-// ---------------------------------------------------------------------------
-
 interface DespesasParams {
   ano?: number;
   mes?: number;
@@ -346,10 +323,6 @@ export async function fetchDeputadoDespesas(
   };
 }
 
-// ---------------------------------------------------------------------------
-// PARTIDOS
-// ---------------------------------------------------------------------------
-
 export async function fetchPartidos(params: { pagina?: number; itens?: number } = {}): Promise<PaginatedResponse<Partido>> {
   const { pagina = 1, itens = 50 } = params;
   const url = buildUrl('/partidos', { pagina, itens, ordem: 'ASC', ordenarPor: 'sigla' });
@@ -365,10 +338,6 @@ export async function fetchPartidos(params: { pagina?: number; itens?: number } 
     totalItems,
   };
 }
-
-// ---------------------------------------------------------------------------
-// PROPOSIÇÕES
-// ---------------------------------------------------------------------------
 
 export async function fetchProposicoes(params: {
   siglaTipo?: string;
@@ -409,12 +378,12 @@ export async function fetchProposicoes(params: {
 
 export async function fetchDeputadoDespesasAggregation(id: number, year: number): Promise<AggregateExpense[]> {
   const firstPage = await fetchDeputadoDespesas(id, { ano: year, itens: 100, pagina: 1 });
-  
+
   if (firstPage.items.length === 0) return [];
-  
+
   const allDespesas = [...firstPage.items];
   const totalPaginas = firstPage.totalPaginas || 1;
-  
+
   if (totalPaginas > 1) {
     const pages = Array.from({ length: totalPaginas - 1 }, (_, i) => i + 2);
     const results = await Promise.all(
@@ -422,12 +391,12 @@ export async function fetchDeputadoDespesasAggregation(id: number, year: number)
     );
     results.forEach(res => allDespesas.push(...res.items));
   }
-  
+
   const map: Record<string, number> = {};
   allDespesas.forEach(d => {
     map[d.tipoDespesa] = (map[d.tipoDespesa] || 0) + d.valorLiquido;
   });
-  
+
   return Object.entries(map)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
@@ -456,13 +425,12 @@ export async function fetchProposicaoAutores(id: number): Promise<ProposicaoAuto
 }
 
 export async function fetchProposicaoTotals(
-  idDeputadoAutor: number, 
+  idDeputadoAutor: number,
   filters: { ano?: number; dataInicio?: string; dataFim?: string } = {}
 ): Promise<ProposicaoTotals & { relatadas: number; apiTotal: number }> {
-  // 1. Fetch Totais Oficiais (Scraping para paridade total com o site da Câmara)
   let officialAutoria = 0;
   let officialRelatadas = 0;
-  
+
   if (filters.ano) {
     try {
       const resp = await fetch(`/api/proposicoes/legislative-totals?id=${idDeputadoAutor}&ano=${filters.ano}`);
@@ -476,7 +444,6 @@ export async function fetchProposicaoTotals(
     }
   }
 
-  // 2. Fetch Breakdown via API v2 (Para mostrar o gráfico/lista de tipos)
   const autoriaData = await fetchProposicoes({ idDeputadoAutor, itens: 100, ...filters, pagina: 1 });
   let allAutoria = [...autoriaData.items];
   const totalPaginasAut = autoriaData.totalPaginas || 1;
@@ -496,15 +463,11 @@ export async function fetchProposicaoTotals(
 
   return {
     counts,
-    total: officialAutoria || allAutoria.length, // Usamos o oficial se tivermos, se não o da API
+    total: officialAutoria || allAutoria.length,
     relatadas: officialRelatadas,
-    apiTotal: allAutoria.length // Guardamos o total da API para transparência/breakdown
+    apiTotal: allAutoria.length
   };
 }
-
-// ---------------------------------------------------------------------------
-// FRENTES PARLAMENTARES
-// ---------------------------------------------------------------------------
 
 export async function fetchFrentes(params: { pagina?: number; itens?: number } = {}): Promise<PaginatedResponse<Frente>> {
   const { pagina = 1, itens = 20 } = params;
@@ -521,10 +484,6 @@ export async function fetchFrentes(params: { pagina?: number; itens?: number } =
     totalItems,
   };
 }
-
-// ---------------------------------------------------------------------------
-// ÓRGÃOS DO DEPUTADO (comissões, conselhos, etc.)
-// ---------------------------------------------------------------------------
 
 export interface OrgaoDeputado {
   idOrgao: number;
@@ -557,10 +516,6 @@ export async function fetchDeputadoOrgaos(
   };
 }
 
-// ---------------------------------------------------------------------------
-// FRENTES DO DEPUTADO
-// ---------------------------------------------------------------------------
-
 export interface FrenteDeputado {
   id: number;
   uri: string;
@@ -578,10 +533,6 @@ export async function fetchDeputadoFrentes(id: number): Promise<FrenteDeputado[]
     return [];
   }
 }
-
-// ---------------------------------------------------------------------------
-// VOTAÇÕES
-// ---------------------------------------------------------------------------
 
 export interface Votacao {
   id: string;
@@ -665,10 +616,6 @@ export async function fetchVotacoes(params: {
   };
 }
 
-// ---------------------------------------------------------------------------
-// VOTOS DE UMA VOTAÇÃO
-// ---------------------------------------------------------------------------
-
 export interface VotoDeputado {
   tipoVoto: string;
   dataRegistroVoto: string;
@@ -718,10 +665,6 @@ export async function fetchVotacaoOrientacoes(id: string): Promise<Orientacao[]>
   }
 }
 
-// ---------------------------------------------------------------------------
-// HISTÓRICO / TRAJETÓRIA
-// ---------------------------------------------------------------------------
-
 export async function fetchDeputadoHistorico(id: number): Promise<HistoricoDeputado[]> {
   const url = buildUrl(`/deputados/${id}/historico`);
   try {
@@ -731,10 +674,6 @@ export async function fetchDeputadoHistorico(id: number): Promise<HistoricoDeput
     return [];
   }
 }
-
-// ---------------------------------------------------------------------------
-// DISCURSOS
-// ---------------------------------------------------------------------------
 
 export async function fetchDeputadoDiscursos(
   id: number,
@@ -763,10 +702,6 @@ export async function fetchDeputadoDiscursos(
   };
 }
 
-// ---------------------------------------------------------------------------
-// OCUPAÇÕES E PROFISSÕES
-// ---------------------------------------------------------------------------
-
 export async function fetchDeputadoOcupacoes(id: number): Promise<Ocupacao[]> {
   const url = buildUrl(`/deputados/${id}/ocupacoes`);
   try {
@@ -787,12 +722,7 @@ export async function fetchDeputadoProfissoes(id: number): Promise<Profissao[]> 
   }
 }
 
-// ---------------------------------------------------------------------------
-// EMENDAS ORÇAMENTÁRIAS
-// ---------------------------------------------------------------------------
-
 export async function fetchDeputadoEmendas(id: number, ano: number): Promise<EmendaOrcamentaria[]> {
-  // Chamamos nossa API interna (Server Route) para contornar problemas de CORS e realizar o scraping no servidor.
   const url = `/api/emendas?id=${id}&ano=${ano}`;
 
   try {
@@ -804,10 +734,6 @@ export async function fetchDeputadoEmendas(id: number, ano: number): Promise<Eme
     return [];
   }
 }
-
-// ---------------------------------------------------------------------------
-// BENEFÍCIOS PARLAMENTARES
-// ---------------------------------------------------------------------------
 
 export interface AuxilioMoradiaMensal {
   mes: string;
@@ -829,10 +755,9 @@ export interface Beneficio {
 }
 
 export async function fetchBeneficios(id: number, ano?: number): Promise<Beneficio | null> {
-  // Chamamos nossa API interna (Server Route)
   const query = new URLSearchParams({ id: id.toString() });
   if (ano) query.append('ano', ano.toString());
-  
+
   const url = `/api/beneficios?${query.toString()}`;
 
   try {
@@ -844,10 +769,6 @@ export async function fetchBeneficios(id: number, ano?: number): Promise<Benefic
     return null;
   }
 }
-
-// ---------------------------------------------------------------------------
-// FREQUÊNCIA PARLAMENTAR
-// ---------------------------------------------------------------------------
 
 export interface FrequenciaPlenario {
   sessoes_total?: string;
@@ -875,7 +796,7 @@ export interface FrequenciaParlamentar {
 export async function fetchFrequencia(id: number, ano?: number): Promise<FrequenciaParlamentar | null> {
   const query = new URLSearchParams({ id: id.toString() });
   if (ano) query.append('ano', ano.toString());
-  
+
   const url = `/api/frequencia?${query.toString()}`;
 
   try {
@@ -896,14 +817,7 @@ export async function fetchDeputadoAnosEleito(id: number): Promise<number[]> {
     const data = await response.json();
     const historico = data.dados || [];
 
-    // Pegar todas as legislaturas únicas do histórico
     const legislaturas = Array.from(new Set(historico.map((h: any) => h.idLegislatura))) as number[];
-    
-    // Mapear legislaturas para anos (Heurística: Legislatura N -> (N-1)*4 + 1...4)
-    // Ex: 57 -> 2023, 2024, 2025, 2026
-    // Ex: 56 -> 2019, 2020, 2021, 2022
-    // Fórmula: AnoInicial = 2023 - (57 - ID) * 4
-    
     const allYears = new Set<number>();
     const currentYear = new Date().getFullYear();
 
@@ -911,8 +825,8 @@ export async function fetchDeputadoAnosEleito(id: number): Promise<number[]> {
       const startYear = 2023 - (57 - idLeg) * 4;
       for (let i = 0; i < 4; i++) {
         const year = startYear + i;
-        if (year <= currentYear + 1) { // Permite o ano atual e o próximo se a legislatura cobrir
-            allYears.add(year);
+        if (year <= currentYear + 1) {
+          allYears.add(year);
         }
       }
     });

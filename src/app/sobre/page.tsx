@@ -1,5 +1,5 @@
 import {
-  Vote, Banknote, FileText, Shield, Scale, Users,
+  Banknote, Scale, Users,
   BookOpen, ExternalLink, HelpCircle
 } from 'lucide-react';
 import Link from 'next/link';
@@ -78,7 +78,6 @@ export default function SobrePage() {
         </div>
       </section>
 
-      {/* FAQ */}
       <section className="space-y-8">
         <h2 className="text-3xl font-extrabold text-white text-center flex items-center justify-center gap-3">
           <HelpCircle className="text-gold" size={28} /> Perguntas Frequentes

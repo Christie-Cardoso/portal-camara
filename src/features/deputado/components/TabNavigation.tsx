@@ -16,9 +16,6 @@ const TABS = [
   { id: 'emendas', label: 'Emendas', icon: PiggyBank, color: 'emerald' },
 ];
 
-/**
- * Barra de navegação horizontal para as tabs de dados do deputado.
- */
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-6 scrollbar-hide border-b border-white/5 no-scrollbar">

@@ -50,7 +50,6 @@ function DeputadosContent() {
   };
 
   useEffect(() => {
-    // Se o input for menor que 3 caracteres, resetamos a query de nome
     if (searchInput.length < 3) {
       if (query !== '') {
         setQuery('');
@@ -62,7 +61,6 @@ function DeputadosContent() {
 
     setIsSearching(true);
 
-    // Só dispara a busca automática se tiver no mínimo 3 caracteres
     const timer = setTimeout(() => {
       setQuery(searchInput);
       setPage(1);
@@ -83,7 +81,6 @@ function DeputadosContent() {
         </p>
       </section>
 
-      {/* Search + Filters */}
       <div className="space-y-4">
         <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
           <div className="absolute inset-y-0 left-4 flex items-center text-slate-500">
@@ -121,7 +118,6 @@ function DeputadosContent() {
         </div>
       </div>
 
-      {/* Results */}
       <div className="space-y-6">
         <div className="flex items-center justify-between border-b border-white/5 pb-4">
           <div className="flex items-center gap-3">

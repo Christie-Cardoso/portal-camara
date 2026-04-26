@@ -43,7 +43,6 @@ export default function DeputadoDetailPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
-      {/* Navegação de Retorno */}
       <Link href="/deputados" className="group inline-flex items-center gap-2 text-slate-400 hover:text-gold transition-all text-sm font-medium mb-10">
         <div className="p-2 bg-slate-card rounded-xl border border-white/5 group-hover:border-gold/30 transition-all">
           <ArrowLeft size={16} />
@@ -52,12 +51,9 @@ export default function DeputadoDetailPage() {
       </Link>
 
       <div className="flex flex-col lg:flex-row gap-10 items-start">
-        {/* Sidebar */}
         <DeputadoSidebar dep={dep} />
 
-        {/* Área de Conteúdo Principal */}
         <div className="flex-1 min-w-0 space-y-12" id="deputado-content-tabs">
-          {/* Bento Grid de Resumo */}
           <BentoGrid
             deputadoId={deputadoId}
             deputadoNome={status.nome}
@@ -65,10 +61,8 @@ export default function DeputadoDetailPage() {
             onOpenMoradiaModal={() => setShowMoradiaModal(true)}
           />
 
-          {/* Navegação de Tabs */}
           <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Conteúdo das Tabs */}
           <div className="pt-2 min-h-[400px]">
             {activeTab === 'despesas' && <DespesasTab deputadoId={deputadoId} />}
             {activeTab === 'frentes' && <FrentesTab deputadoId={deputadoId} />}
@@ -80,7 +74,6 @@ export default function DeputadoDetailPage() {
         </div>
       </div>
 
-      {/* Modal de Auxílio-Moradia */}
       {showMoradiaModal && (
         <HousingAllowanceModal
           deputadoId={deputadoId}

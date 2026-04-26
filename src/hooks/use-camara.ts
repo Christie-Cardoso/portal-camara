@@ -244,7 +244,7 @@ export function useProposicaoTotals(id: number, filters: { ano?: number; dataIni
     queryKey: ['proposicao', 'totals', id, filters],
     queryFn: () => fetchProposicaoTotals(id, filters),
     enabled: !!id,
-    staleTime: 6 * 60 * 60 * 1000, // 6 hours
+    staleTime: 6 * 60 * 60 * 1000,
   });
 }
 
@@ -253,7 +253,7 @@ export function useDeputadoDespesasAggregation(id: number, year: number) {
     queryKey: ['deputados', 'despesas-agregadas', id, year],
     queryFn: () => fetchDeputadoDespesasAggregation(id, year),
     enabled: !!id && !!year,
-    staleTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: 15 * 60 * 1000,
   });
 }
 
@@ -262,7 +262,7 @@ export function useDeputadoEmendas(id: number, year: number) {
     queryKey: ['deputados', 'emendas', id, year],
     queryFn: () => fetchDeputadoEmendas(id, year),
     enabled: !!id && !!year,
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000,
   });
 }
 
@@ -271,17 +271,16 @@ export function useBeneficios(id: number, ano?: number) {
     queryKey: ['deputados', 'beneficios', id, ano],
     queryFn: () => fetchBeneficios(id, ano),
     enabled: !!id,
-    staleTime: 6 * 60 * 60 * 1000, // 6 hours
+    staleTime: 6 * 60 * 60 * 1000,
   });
 }
 
 export function useFrequencia(id: number, ano?: number) {
   const year = ano || new Date().getFullYear();
-  
+
   return useQuery({
     queryKey: ['deputados', 'frequencia', id, year],
     queryFn: async () => {
-      // 1. Tenta buscar diretamente no Supabase (mais rápido, evita hop de API)
       if (hasSupabaseConfig()) {
         try {
           const { data, error } = await supabase
@@ -290,11 +289,10 @@ export function useFrequencia(id: number, ano?: number) {
             .eq('deputado_id', id)
             .eq('ano', year)
             .maybeSingle();
-            
+
           if (data && !error) {
             const updatedAt = new Date(data.updated_at).getTime();
             const now = new Date().getTime();
-            // Se os dados têm menos de 12 horas, usamos direto do banco
             if (now - updatedAt < 12 * 60 * 60 * 1000) {
               console.log(`[useFrequencia] Carregado diretamente do Supabase: ${id} (${year})`);
               return data;
@@ -304,13 +302,10 @@ export function useFrequencia(id: number, ano?: number) {
           console.warn('[useFrequencia] Erro ao buscar no banco, tentando via API...', e);
         }
       }
-
-      // 2. Se não tiver no banco ou estiver antigo, chama a API Route
-      // A API Route fará o Scraping e salvará no banco para a próxima vez.
       return fetchFrequencia(id, year);
     },
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // Mantém em memória por 5 min
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -320,6 +315,6 @@ export function useAnosEleito(id: number) {
     queryKey: ['deputados', 'anos-eleito', id],
     queryFn: () => fetchDeputadoAnosEleito(id),
     enabled: !!id,
-    staleTime: 24 * 60 * 60 * 1000, // 24 hours
+    staleTime: 24 * 60 * 60 * 1000,
   });
 }

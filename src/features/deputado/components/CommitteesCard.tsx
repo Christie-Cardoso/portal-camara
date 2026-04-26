@@ -7,15 +7,12 @@ interface CommitteesCardProps {
   deputadoId: number;
 }
 
-/**
- * Card do Bento Grid — comissões e órgãos onde o deputado atua.
- */
 export function CommitteesCard({ deputadoId }: CommitteesCardProps) {
   const { data: orgaosData, isLoading } = useDeputadoOrgaos(deputadoId);
   const orgaos = orgaosData?.items?.filter(o => !o.dataFim) || [];
 
   return (
-    <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 space-y-8 flex flex-col group/comis h-full shadow-2xl relative overflow-hidden">
+    <div className="lg:col-span-1 bg-navy/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-8 space-y-8 flex flex-col group/comis h-full shadow-2xl relative overflow-hidden">
       <div className="absolute bottom-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl opacity-0 group-hover/comis:opacity-100 transition-opacity"></div>
 
       <div className="flex items-center justify-between relative z-10">
@@ -34,7 +31,7 @@ export function CommitteesCard({ deputadoId }: CommitteesCardProps) {
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-emerald-400 animate-spin" /></div>
         ) : orgaos.length > 0 ? (
-          <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar h-[480px]">
+          <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar h-[350px] md:h-[480px]">
             {orgaos.map((orgao) => (
               <div key={orgao.idOrgao} className="p-5 bg-white/5 rounded-[1.5rem] border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all space-y-3 group/item shadow-sm">
                 <div className="flex items-center justify-between">

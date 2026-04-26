@@ -6,8 +6,7 @@ import {
   Pie,
   Cell,
   Tooltip,
-  ResponsiveContainer,
-  Text
+  ResponsiveContainer
 } from 'recharts';
 import { DollarSign, AlertCircle, Info } from 'lucide-react';
 
@@ -74,17 +73,15 @@ export function ExpensesDonutChart({ data, loading }: ExpensesDonutChartProps) {
     );
   }
 
-  // Filter out very small values for the pie but show in legend
   const chartData = data.filter(item => (item.value / total) > 0.005);
   const othersValue = total - chartData.reduce((acc, curr) => acc + curr.value, 0);
-  
+
   if (othersValue > 0) {
     chartData.push({ name: 'Outras Despesas', value: othersValue });
   }
 
   return (
     <div className="w-full h-full flex flex-col md:flex-row items-center gap-8">
-      {/* Chart container */}
       <div className="relative w-full md:w-1/2 h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -108,8 +105,7 @@ export function ExpensesDonutChart({ data, loading }: ExpensesDonutChartProps) {
             <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
-        
-        {/* Center Total label */}
+
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-slate-500 text-[10px] font-black uppercase tracking-tighter">Total do Ano</span>
           <span className="text-xl font-black text-white tabular-nums tracking-tighter">
@@ -119,7 +115,6 @@ export function ExpensesDonutChart({ data, loading }: ExpensesDonutChartProps) {
         </div>
       </div>
 
-      {/* Modern Legend */}
       <div className="w-full md:w-1/2 flex flex-col justify-center space-y-3">
         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
           <DollarSign size={12} className="text-indigo-400" />
@@ -131,7 +126,7 @@ export function ExpensesDonutChart({ data, loading }: ExpensesDonutChartProps) {
             return (
               <div key={entry.name} className="flex items-center justify-between group p-2 hover:bg-white/5 rounded-xl transition-all cursor-default border border-transparent hover:border-white/5">
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <div 
+                  <div
                     className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm shadow-black/20"
                     style={{ backgroundColor: COLORS[index % COLORS.length] }}
                   />

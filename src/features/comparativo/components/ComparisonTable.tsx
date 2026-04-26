@@ -5,7 +5,7 @@ import {
   PenTool, Gavel, Building2, Home, Minus, XCircle, Info
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatters';
-import { CURRENT_YEAR, COMPARISON_YEARS } from '../constants';
+import { COMPARISON_YEARS } from '../constants';
 
 interface ComparisonTableProps {
   stats: any[];
@@ -379,10 +379,10 @@ export function ComparisonTable({
                 {s.isReady ? (
                   <div className="flex flex-col items-center gap-2.5">
                     <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${s.housingType === 'imovel'
+                      ? 'bg-white/5 text-slate-400 border border-white/10'
+                      : s.housingType === 'auxilio'
                         ? 'bg-white/5 text-slate-400 border border-white/10'
-                        : s.housingType === 'auxilio'
-                          ? 'bg-white/5 text-slate-400 border border-white/10'
-                          : 'bg-gold/10 text-gold border border-gold/20 shadow-lg shadow-gold/10'
+                        : 'bg-gold/10 text-gold border border-gold/20 shadow-lg shadow-gold/10'
                       }`}>
                       {s.housingType === 'imovel' ? <Home size={20} /> :
                         s.housingType === 'auxilio' ? <DollarSign size={20} /> :

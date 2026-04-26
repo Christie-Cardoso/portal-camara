@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
   const anoInt = parseInt(ano);
 
   try {
-    // 1. Tenta buscar dados já persistidos no Supabase
     const { data: cachedData, error: dbError } = await supabase
       .from('emendas_parlamentares')
       .select('*')
@@ -36,7 +35,6 @@ export async function GET(req: NextRequest) {
       })));
     }
 
-    // 2. Se não houver dados no banco, realiza o Scraping
     console.log(`[Cache Miss] Iniciando scraping para o deputado ${deputadoId}, ano ${anoInt}`);
     const externalUrl = `https://www.camara.leg.br/deputados/${id}/todas-emendas?ano=${ano}`;
 
@@ -101,7 +99,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 3. Salvar os resultados no banco para futuros acessos
     if (emendasScraped.length > 0) {
       const uniqueEmendas = Array.from(new Map(
         emendasScraped.map(e => [`${e.deputado_id}-${e.ano}-${e.orgao_concedente}-${e.objetivo}`, e])
@@ -118,7 +115,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 4. Retornar dados mapeados para o frontend
     const result = emendasScraped.map(e => ({
       numero: e.numero,
       tipo: e.tipo,
