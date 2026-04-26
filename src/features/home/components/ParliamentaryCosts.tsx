@@ -56,7 +56,7 @@ export function ParliamentaryCosts() {
             </div>
             <span className="text-xs font-bold text-gold uppercase tracking-wider">Custo total estimado</span>
           </div>
-          <span className="text-3xl font-black text-gold">~R$ 200K</span>
+          <span className="text-3xl font-black text-gold">R$ 200K</span>
           <p className="text-slate-600 text-[10px] mt-1">Por mês, por deputado</p>
           <div className="absolute -bottom-2 -right-2 w-24 h-24 bg-gold/5 blur-3xl rounded-full" />
         </div>
