@@ -56,10 +56,10 @@ O projeto segue uma **Feature-Based Architecture** com domínios isolados, inspi
 src/
 ├── app/                              # Next.js App Router (Rotas & Páginas)
 │   ├── api/                          #   ├── API Routes (BFF para scraping e cache)
+│   │   ├── cron/                     #   │   ├── Vercel Cron Jobs (Sincronização Automática)
 │   │   ├── beneficios/               #   │   ├── Benefícios do mandato
 │   │   ├── emendas/                  #   │   ├── Emendas orçamentárias
 │   │   ├── frequencia/               #   │   └── Frequência parlamentar
-│   │   └── proposicoes/              #   │
 │   ├── comparativo/                  #   ├── Batalha de Gigantes (comparativo)
 │   ├── deputados/                    #   ├── Listagem de deputados
 │   │   └── [id]/                     #   │   └── Perfil detalhado (orquestrador fino)
@@ -151,6 +151,9 @@ Edite o `.env.local` com suas credenciais:
 # Supabase (opcional — o sistema funciona sem, ocultando features dependentes)
 NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima_aqui
+
+# Vercel Cron (Segurança para rotas de sincronização)
+CRON_SECRET=sua_chave_secreta_aqui
 ```
 
 ```bash
@@ -176,6 +179,22 @@ Acesse [http://localhost:3000](http://localhost:3000) ✨
 | `pnpm sync:emendas` | Importa dados de emendas orçamentárias |
 
 > **Nota:** Os scripts `sync:*` requerem as variáveis de ambiente do Supabase configuradas.
+
+---
+
+## 🕒 Automação com Vercel Cron
+
+O projeto utiliza **Vercel Cron Jobs** para manter o banco de dados Supabase sincronizado automaticamente toda semana.
+
+| Rota | Agendamento | Descrição |
+|:---|:---|:---|
+| `/api/cron/sync-frequencia` | Seg. às 02:00 | Sincroniza presença de todos os deputados |
+| `/api/cron/sync-beneficios` | Seg. às 03:00 | Atualiza salários e benefícios do mandato |
+| `/api/cron/sync-emendas` | Seg. às 04:00 | Sincroniza execução de emendas orçamentárias |
+| `/api/cron/sync-secretarios` | Seg. às 05:00 | Atualiza a lista oficial de funcionários |
+| `/api/cron/sync-remuneracao` | Seg. às 06:00 | Vincula salários detalhados aos secretários |
+
+> **Segurança:** As rotas de Cron são protegidas por um token `Bearer`. Certifique-se de configurar a variável `CRON_SECRET` no painel do Vercel e no seu `.env.local`.
 
 ---
 
