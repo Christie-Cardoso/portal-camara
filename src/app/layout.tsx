@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-navy text-foreground overflow-x-hidden`} suppressHydrationWarning>
         <QueryProvider>
           <Navbar />
-          <main className="pt-20">{children}</main>
+          <main className="pt-24">{children}</main>
           <footer className="border-t border-slate-card mt-20 py-12 bg-navy/50">
             <div className="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
               <p>© 2026 Portal Câmara - Dados de <a href="https://dadosabertos.camara.leg.br" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">dadosabertos.camara.leg.br</a></p>
