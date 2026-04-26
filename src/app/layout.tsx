@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import Image from "next/image";
 import QueryProvider from "@/providers/query-provider";
 import "./globals.css";
 
@@ -19,11 +20,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <QueryProvider>
           <nav className="fixed top-0 w-full z-50 bg-navy/80 backdrop-blur-md border-b border-slate-card">
             <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-tr from-gold to-gold-hover rounded-xl flex items-center justify-center font-bold text-navy text-xl">
-                  C
-                </div>
-                <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+              <Link href="/" className="flex items-center gap-3 group">
+                <Image 
+                  src="/logo.png" 
+                  alt="Portal Câmara Logo" 
+                  width={180} 
+                  height={48} 
+                  className="h-12 w-auto object-contain transition-transform group-hover:scale-105"
+                  priority
+                />
+                <span className="text-2xl font-black tracking-tighter bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
                   Portal Câmara
                 </span>
               </Link>
