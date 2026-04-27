@@ -42,31 +42,31 @@ export function ComparisonSlot({
         <>
           {isWinner && (
             <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-30 animate-[float_2s_ease-in-out_infinite]">
-              <div className="bg-gold text-navy p-2.5 rounded-2xl shadow-xl shadow-gold/40 border-2 border-yellow-200">
+              <div className="bg-emerald-500 text-navy p-2.5 rounded-2xl shadow-xl shadow-emerald-500/40 border-2 border-emerald-300">
                 <Crown size={22} strokeWidth={3} />
               </div>
             </div>
           )}
           <div className="w-full h-full relative p-4 flex flex-col items-center overflow-hidden rounded-[1.8rem]">
-            <div className={`relative w-full aspect-square max-w-[180px] rounded-[1.5rem] overflow-hidden border shadow-2xl mb-3 group-hover:scale-105 transition-transform duration-500 ${isWinner ? 'border-gold shadow-[0_0_30px_rgba(255,215,0,0.3)] ring-2 ring-gold/20' : 'border-white/10'
+            <div className={`relative w-full aspect-square max-w-[180px] rounded-[1.5rem] overflow-hidden border shadow-2xl mb-3 group-hover:scale-105 transition-transform duration-500 ${isWinner ? 'border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.3)] ring-2 ring-emerald-500/20' : 'border-white/10'
               }`}>
               <Image
                 src={profile.ultimoStatus.urlFoto}
                 alt={profile.ultimoStatus.nome}
                 fill
+                sizes="(max-width: 768px) 160px, 180px"
                 className="object-cover"
-                unoptimized
               />
               <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-transparent to-transparent opacity-60"></div>
             </div>
 
             <div className="text-center space-y-1 w-full translate-y-0 group-hover:-translate-y-2 transition-transform">
               {isWinner && (
-                <span className="text-[8px] font-black text-gold uppercase tracking-[0.2em] mb-1 block animate-pulse">
+                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1 block animate-pulse">
                   Campeão
                 </span>
               )}
-              <h3 className={`text-xs font-black uppercase tracking-tighter line-clamp-2 leading-tight px-1 ${isWinner ? 'text-gold' : 'text-white'}`}>
+              <h3 className={`text-xs font-black uppercase tracking-tighter line-clamp-2 leading-tight px-1 ${isWinner ? 'text-emerald-400' : 'text-white'}`}>
                 {profile.ultimoStatus.nome}
               </h3>
               <div className="flex items-center justify-center gap-2">

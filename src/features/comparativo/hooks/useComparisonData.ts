@@ -196,6 +196,16 @@ export function useComparisonData(selectedIds: number[], selectedYear: number = 
   const minFaltas = allReady ? Math.min(...stats.map(s => s.faltasPlenario)) : 0;
   const minStaff = allReady ? Math.min(...stats.map(s => s.staffCount)) : 0;
 
+  const maxGasto = allReady ? Math.max(...stats.map(s => s.totalGasto)) : 0;
+  const minOrgaos = allReady ? Math.min(...stats.map(s => s.numOrgaos)) : 0;
+  const minEmendas = allReady ? Math.min(...stats.map(s => s.totalEmendas)) : 0;
+  const minAutoria = allReady ? Math.min(...stats.map(s => s.totalAutoria)) : 0;
+  const minRelatorias = allReady ? Math.min(...stats.map(s => s.totalRelatorias)) : 0;
+  const minPresencaLiquida = allReady ? Math.min(...stats.map(s => s.presencasPlenario - s.faltasPlenario)) : 0;
+  const minComPresencaLiquida = allReady ? Math.min(...stats.map(s => s.comPresenca - s.comFaltasNaoJust)) : 0;
+  const maxFaltas = allReady ? Math.max(...stats.map(s => s.faltasPlenario)) : 0;
+  const maxStaff = allReady ? Math.max(...stats.map(s => s.staffCount)) : 0;
+
   // Determinar o Vencedor da Batalha
   const winnerIds = useMemo(() => {
     if (!allReady || stats.length < 2) return [];
@@ -207,11 +217,11 @@ export function useComparisonData(selectedIds: number[], selectedYear: number = 
 
       if (s.totalGasto === minGasto && s.totalGasto > 0) points++;
       if (s.numOrgaos === maxOrgaos && s.numOrgaos > 0) points++;
+      if (presencaLiquida === maxPresencaLiquida && presencaLiquida > 0) points++;
+      if (comPresencaLiquida === maxComPresencaLiquida && comPresencaLiquida > 0) points++;
       if (s.totalEmendas === maxEmendas && s.totalEmendas > 0) points++;
       if (s.totalAutoria === maxAutoria && s.totalAutoria > 0) points++;
       if (s.totalRelatorias === maxRelatorias && s.totalRelatorias > 0) points++;
-      if (presencaLiquida === maxPresencaLiquida && presencaLiquida > 0) points++;
-      if (s.faltasPlenario === minFaltas) points++;
       if (s.staffCount === minStaff && s.staffCount > 0) points++;
       if (s.housingType === 'nenhum') points++;
       return { id: s.id, points };
@@ -236,7 +246,16 @@ export function useComparisonData(selectedIds: number[], selectedYear: number = 
       maxPresencaLiquida,
       maxComPresencaLiquida,
       minFaltas,
-      minStaff
+      minStaff,
+      maxGasto,
+      minOrgaos,
+      minEmendas,
+      minAutoria,
+      minRelatorias,
+      minPresencaLiquida,
+      minComPresencaLiquida,
+      maxFaltas,
+      maxStaff
     }
   };
 }

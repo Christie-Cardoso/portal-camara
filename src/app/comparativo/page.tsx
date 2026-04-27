@@ -34,7 +34,7 @@ export default function ComparativoPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12 md:py-24 space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div id="comparativo-capture" className="max-w-7xl mx-auto px-4 py-12 md:py-24 space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
 
       <div className="text-center space-y-3 max-w-2xl mx-auto">
         <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase">
